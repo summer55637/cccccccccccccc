@@ -67,6 +67,15 @@ export async function runSkillTests({ onLog = () => {} } = {}) {
     assert.equal(book.skills[0].canLearn, true);
     pass("新角色取得 1 點起始技能點並載入職業技能");
 
+    await database.saveCharacterData(knight.characterId, {
+      skills: { learned: [] },
+    });
+    const legacySkillSave = await database.loadCharacterSave(knight.characterId);
+    assert.equal(legacySkillSave.skills.points, 1);
+    assert.deepEqual(legacySkillSave.skills.shortcuts, []);
+    assert.deepEqual(legacySkillSave.skills.cooldowns, {});
+    pass("只有舊版 learned 欄位的角色存檔會自動補齊新技能欄位");
+
     await expectReject(
       () => learnSkill(database, knight.characterId, "wind-arrow"),
       /不屬於目前角色的職業/,
