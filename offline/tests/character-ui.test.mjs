@@ -234,6 +234,37 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
     logPass(onLog, "進入遊戲、鍵盤／觸控移動、碰撞阻擋及位置持續保存");
 
+    await renamedCard.getByRole("button", { name: "編輯角色 測試魔導師" }).click();
+    await page.locator("#editClassId").selectOption("knight");
+    await page.locator('#editForm button[type="submit"]').click();
+    await page.locator(".character-card").filter({ hasText: "測試魔導師" }).filter({ hasText: "騎士" }).waitFor();
+    const classChangeSkills = await page.evaluate(async ({ name, id }) => {
+      const { OfflineCharacterDB } = await import("/offline/storage/indexeddb.js");
+      const database = new OfflineCharacterDB({ dbName: name });
+      try {
+        const save = await database.loadCharacterSave(id);
+        return save.skills;
+      } finally {
+        database.close();
+      }
+    }, { name: dbName, id: characterId });
+    assert.equal(classChangeSkills.points, 2);
+    assert.deepEqual(classChangeSkills.learned, []);
+    assert.deepEqual(classChangeSkills.shortcuts, []);
+    assert.deepEqual(classChangeSkills.cooldowns, {});
+    logPass(onLog, "轉職時退還已投入技能點並清除舊職業技能");
+
+    await page.locator("#enterButton").click();
+    await page.waitForURL(url => url.pathname.endsWith("/offline/game/index.html"));
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    await page.locator('.skill-card[data-skill-id="power-strike"]').waitFor();
+    assert.equal(await page.locator('.skill-card[data-skill-id="firebolt"]').count(), 0);
+    assert.equal(await page.locator("#skillPointBadge").textContent(), "技能點數 2");
+    await page.locator("#returnToCharacters").click();
+    await page.waitForURL(url => url.pathname.endsWith("/offline/character/ui/index.html"));
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    logPass(onLog, "轉職後只顯示新職業技能並保留可用技能點");
+
     await page.locator("#characterName").fill("試驗精靈");
     await page.locator("#classId").selectOption("elf");
     await page.locator("#createButton").click();
@@ -259,7 +290,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.deepEqual(pageErrors, [], `角色 UI 發生 JavaScript 錯誤：${pageErrors.join("; ")}`);
     assert.deepEqual(externalRequests, [], `角色 UI 不應連線外部服務：${externalRequests.join("; ")}`);
     onLog("PASS：角色 UI 建立、編輯、選擇、重新載入及刪除測試");
-    return { passed: 11, failed: 0 };
+    return { passed: 13, failed: 0 };
   } finally {
     await page.close();
     cleanupPage = await browser.newPage();
