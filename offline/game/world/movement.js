@@ -7,12 +7,13 @@ const DIRECTIONS = Object.freeze({
   right: Object.freeze({ dx: 1, dy: 0, label: "右方" }),
 });
 
-export function calculateMovement(position, direction, mapId = "start") {
+export function calculateMovement(position, direction, mapId = "start", blockedPositions = []) {
   const map = getMapDefinition(mapId);
   if (!isInsideMap(map, position)) throw new RangeError("角色目前座標不在地圖範圍內。");
   const vector = DIRECTIONS[direction];
   if (!vector) throw new Error("不支援的移動方向：" + String(direction));
 
+  if (!Array.isArray(blockedPositions)) throw new TypeError("阻擋位置必須是陣列。");
   const next = { x: position.x + vector.dx, y: position.y + vector.dy };
   const tile = getMapTile(mapId, next.x, next.y);
   if (tile.solid) {
@@ -25,6 +26,14 @@ export function calculateMovement(position, direction, mapId = "start") {
       }[tile.type] || "障礙") + "，無法通過。",
     };
   }
+  if (blockedPositions.some(item => item && item.x === next.x && item.y === next.y)) {
+    return {
+      moved: false,
+      position: { x: position.x, y: position.y },
+      direction,
+      reason: "前方有怪物，無法通過。",
+    };
+  }
   return {
     moved: true,
     position: next,
@@ -33,14 +42,14 @@ export function calculateMovement(position, direction, mapId = "start") {
   };
 }
 
-export async function moveCharacter(database, characterId, direction) {
+export async function moveCharacter(database, characterId, direction, blockedPositions = []) {
   if (!database || typeof database.getCharacter !== "function" ||
       typeof database.updateCharacter !== "function") {
     throw new TypeError("請提供本機角色資料庫。");
   }
   const character = await database.getCharacter(characterId);
   if (!character) throw new Error("找不到要移動的角色。");
-  const result = calculateMovement(character.position, direction, character.mapId);
+  const result = calculateMovement(character.position, direction, character.mapId, blockedPositions);
   if (!result.moved) return { ...result, character };
   const updated = await database.updateCharacter(characterId, { position: result.position });
   return { ...result, character: updated };
