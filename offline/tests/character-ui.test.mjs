@@ -140,6 +140,64 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
     assert.equal(await page.locator("#monsterList .monster-card[data-spawn-id=\"slime-south\"] .monster-state").textContent(), "重生中");
     logPass(onLog, "普通攻擊、擊敗怪物、獲得經驗／掉落及重載後狀態保存");
+
+    await page.evaluate(async ({ name, id }) => {
+      const { OfflineCharacterDB } = await import("/offline/storage/indexeddb.js");
+      const { grantItem } = await import("/offline/game/inventory/service.js");
+      const database = new OfflineCharacterDB({ dbName: name });
+      try {
+        const character = await database.getCharacter(id);
+        await database.updateCharacter(id, {
+          hp: { current: 30, max: character.hp.max },
+          mp: { current: 5, max: character.mp.max },
+        });
+        await grantItem(database, id, "red-potion", 2);
+        await grantItem(database, id, "blue-potion", 1);
+        await grantItem(database, id, "iron-sword", 1);
+        await grantItem(database, id, "leather-armor", 1);
+      } finally {
+        database.close();
+      }
+    }, { name: dbName, id: characterId });
+    await page.reload({ waitUntil: "load" });
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    await page.locator("#inventoryPanel").scrollIntoViewIfNeeded();
+
+    const redPotionCard = page.locator('.inventory-card[data-item-id="red-potion"]');
+    await redPotionCard.locator('button[data-inventory-action="use"]').click();
+    await page.locator("#adventureMessage").filter({ hasText: "恢復 30 HP" }).waitFor();
+    assert.match(await page.locator("#hpText").textContent(), /60 \/ 112/);
+    assert.equal(await redPotionCard.locator(".item-count").textContent(), "×1");
+
+    const bluePotionCard = page.locator('.inventory-card[data-item-id="blue-potion"]');
+    await bluePotionCard.locator('button[data-inventory-action="use"]').click();
+    await page.locator("#adventureMessage").filter({ hasText: "恢復 20 MP" }).waitFor();
+    assert.match(await page.locator("#mpText").textContent(), /25 \/ 53/);
+    assert.equal(await page.locator('.inventory-card[data-item-id="blue-potion"]').count(), 0);
+
+    await page.locator('.inventory-card[data-item-id="iron-sword"] button[data-inventory-action="equip"]').click();
+    await page.locator("#equipmentSlots").filter({ hasText: "鐵劍" }).waitFor();
+    await page.locator('.inventory-card[data-item-id="leather-armor"] button[data-inventory-action="equip"]').click();
+    await page.locator("#equipmentSlots").filter({ hasText: "皮革護甲" }).waitFor();
+    assert.equal(await page.locator("#equipmentBonusText").textContent(), "攻擊加成 +4 · 防禦加成 +2");
+    assert.equal(await page.locator('.inventory-card[data-item-id="iron-sword"]').count(), 0);
+
+    const gelCard = page.locator('.inventory-card[data-item-id="slime-gel"]');
+    await gelCard.locator('button[data-inventory-action="drop"]').click();
+    await page.locator("#adventureMessage").filter({ hasText: "已丟棄" }).waitFor();
+    assert.equal(await page.locator('.inventory-card[data-item-id="slime-gel"]').count(), 0);
+
+    await page.locator('#equipmentSlots button[data-item-id="weapon"]').click();
+    await page.locator('.inventory-card[data-item-id="iron-sword"]').waitFor();
+    await page.locator('#equipmentSlots button[data-item-id="armor"]').click();
+    await page.locator('.inventory-card[data-item-id="leather-armor"]').waitFor();
+    assert.equal(await page.locator("#equipmentBonusText").textContent(), "攻擊加成 +0 · 防禦加成 +0");
+    await page.reload({ waitUntil: "load" });
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    assert.match(await page.locator("#hpText").textContent(), /60 \/ 112/);
+    assert.match(await page.locator("#mpText").textContent(), /25 \/ 53/);
+    assert.equal(await page.locator('.inventory-card[data-item-id="iron-sword"]').count(), 1);
+    logPass(onLog, "藥水使用、裝備／卸下、丟棄與背包存檔整合操作");
     await page.locator("#returnToCharacters").click();
     await page.waitForURL(url => url.pathname.endsWith("/offline/character/ui/index.html"));
     await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
@@ -170,7 +228,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.deepEqual(pageErrors, [], `角色 UI 發生 JavaScript 錯誤：${pageErrors.join("; ")}`);
     assert.deepEqual(externalRequests, [], `角色 UI 不應連線外部服務：${externalRequests.join("; ")}`);
     onLog("PASS：角色 UI 建立、編輯、選擇、重新載入及刪除測試");
-    return { passed: 10, failed: 0 };
+    return { passed: 11, failed: 0 };
   } finally {
     await page.close();
     cleanupPage = await browser.newPage();
