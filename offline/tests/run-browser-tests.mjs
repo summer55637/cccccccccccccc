@@ -107,7 +107,7 @@ try {
   await combatPage.locator("#run").click();
   try {
     await combatPage.locator("#status").filter({
-      hasText: "成功：10 項戰鬥測試全部通過",
+      hasText: "成功：11 項戰鬥測試全部通過",
     }).waitFor({ timeout: 30000 });
   } catch (error) {
     const statusText = await combatPage.locator("#status").textContent();
@@ -115,10 +115,10 @@ try {
     throw new Error("戰鬥測試失敗。狀態：" + statusText + "\n測試紀錄：\n" + testLog + "\n原始錯誤：" + error.message);
   }
   const combatLog = await combatPage.locator("#log").textContent();
-  assert.match(combatLog || "", /全部通過：10 項戰鬥測試/);
+  assert.match(combatLog || "", /全部通過：11 項戰鬥測試/);
   assert.deepEqual(combatErrors, [], "戰鬥測試頁發生 JavaScript 錯誤：" + combatErrors.join("; "));
   process.stdout.write(combatLog || "");
-  process.stdout.write("\nPASS：10 monster and combat checks\n");
+  process.stdout.write("\nPASS：11 monster and combat checks\n");
   await combatPage.close();
 
   const progressionPage = await browser.newPage();
