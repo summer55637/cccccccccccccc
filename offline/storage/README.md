@@ -30,7 +30,7 @@
     await saves.saveCharacterData(character.characterId, {
       inventory: { capacity: 100, items: [{ itemId: "potion", count: 3 }] },
       equipment: { slots: { weapon: "wooden-sword" } },
-      skills: { learned: [] },
+      skills: { points: 1, learned: [], shortcuts: [], cooldowns: {} },
       quests: { entries: [] },
     });
 
@@ -65,6 +65,7 @@
 ## 備份格式及安全措施
 
 - 備份為 JSON 檔，包含版本號、匯出時間、角色、背包、裝備、技能、任務及設定。
+- 技能存檔包含技能點數、已學技能等級、4 格快捷欄及冷卻到期時間；舊版僅含 learned 的資料會補預設欄位。
 - 匯入只接受目前支援的備份格式及版本，並檢查欄位、數值、角色 ID、重複名稱、設定及附屬資料關聯。
 - 會拒絕危險物件欄位、過深巢狀資料、超大備份、不存在角色的附屬資料及無效 JSON。
 - 匯入前先完成整份資料驗證，再用單一 IndexedDB 交易清除及寫入資料；交易失敗時不會留下半套還原資料。
