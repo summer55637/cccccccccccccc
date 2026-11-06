@@ -1,4 +1,13 @@
-import assert from "node:assert/strict";
+const assert = {
+  equal(actual, expected, message = "數值不相符。") {
+    if (actual !== expected) throw new Error(message + " 實際：" + actual + "；預期：" + expected);
+  },
+  deepEqual(actual, expected, message = "資料內容不相符。") {
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+      throw new Error(message + " 實際：" + JSON.stringify(actual) + "；預期：" + JSON.stringify(expected));
+    }
+  },
+};
 import { OfflineCharacterDB } from "../storage/indexeddb.js";
 import {
   CHARACTER_LEVEL_CAP,
