@@ -28,12 +28,15 @@ export function getMonsterBrainState(definition, monsterState, playerPosition) {
   return { state: "idle", label: "待機", distance };
 }
 
-export function calculateBasicAttack(character, definition, roll) {
+export function calculateBasicAttack(character, definition, roll, attackBonus = 0) {
   if (!character?.stats || !definition) throw new TypeError("普通攻擊缺少角色或怪物資料。");
+  if (!Number.isSafeInteger(attackBonus) || attackBonus < 0 || attackBonus > 100_000) {
+    throw new RangeError("武器攻擊加成格式不正確。");
+  }
   const hit = checkedRoll(roll) < PLAYER_HIT_CHANCE;
   const attackPower = Math.max(
     1,
-    character.stats.str * 2 + character.level + Math.floor((character.stats.dex || 0) / 5),
+    character.stats.str * 2 + character.level + Math.floor((character.stats.dex || 0) / 5) + attackBonus,
   );
   return {
     hit,
@@ -42,10 +45,13 @@ export function calculateBasicAttack(character, definition, roll) {
   };
 }
 
-export function calculateMonsterAttack(character, definition, roll) {
+export function calculateMonsterAttack(character, definition, roll, defenseBonus = 0) {
   if (!character?.stats || !definition) throw new TypeError("怪物反擊缺少角色或怪物資料。");
+  if (!Number.isSafeInteger(defenseBonus) || defenseBonus < 0 || defenseBonus > 100_000) {
+    throw new RangeError("防具防禦加成格式不正確。");
+  }
   const hit = checkedRoll(roll) < definition.hitChance;
-  const mitigation = Math.floor((character.stats.vit || 0) / 5);
+  const mitigation = Math.floor((character.stats.vit || 0) / 5) + defenseBonus;
   return {
     hit,
     damage: hit ? Math.max(1, definition.attack - mitigation) : 0,
