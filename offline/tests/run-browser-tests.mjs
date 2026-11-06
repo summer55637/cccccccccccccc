@@ -78,7 +78,7 @@ try {
   await worldPage.locator("#run").click();
   try {
     await worldPage.locator("#status").filter({
-      hasText: "成功：9 項世界地圖測試全部通過",
+      hasText: "成功：10 項世界地圖測試全部通過",
     }).waitFor({ timeout: 30000 });
   } catch (error) {
     const statusText = await worldPage.locator("#status").textContent();
@@ -86,10 +86,10 @@ try {
     throw new Error("地圖移動測試失敗。狀態：" + statusText + "\n測試紀錄：\n" + testLog + "\n原始錯誤：" + error.message);
   }
   const worldLog = await worldPage.locator("#log").textContent();
-  assert.match(worldLog || "", /全部通過：9 項世界地圖測試/);
+  assert.match(worldLog || "", /全部通過：10 項世界地圖測試/);
   assert.deepEqual(worldErrors, [], "地圖移動測試頁發生 JavaScript 錯誤：" + worldErrors.join("; "));
   process.stdout.write(worldLog || "");
-  process.stdout.write("\nPASS：9 world movement checks\n");
+  process.stdout.write("\nPASS：10 world movement checks\n");
   await worldPage.close();
 
   const progressionPage = await browser.newPage();
