@@ -112,6 +112,33 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     await page.reload({ waitUntil: "load" });
     await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
     assert.equal(await page.locator("#positionText").textContent(), "10, 6");
+    await page.evaluate(() => { Math.random = () => 0.01; });
+    const slimeAttack = page.locator('.monster-card[data-spawn-id="slime-south"] .monster-attack-button');
+    await slimeAttack.waitFor({ state: "visible" });
+    assert.equal(await slimeAttack.isEnabled(), true, "相鄰的史萊姆應可攻擊");
+    await slimeAttack.click();
+    await page.locator("#adventureMessage").filter({ hasText: "擊敗 森林史萊姆" }).waitFor({ timeout: 10000 });
+    const combatSave = await page.evaluate(async ({ name, id }) => {
+      const { OfflineCharacterDB } = await import("/offline/storage/indexeddb.js");
+      const database = new OfflineCharacterDB({ dbName: name });
+      try {
+        const save = await database.loadCharacterSave(id);
+        return {
+          experience: save.character.experience,
+          itemId: save.inventory.items[0]?.itemId,
+          itemCount: save.inventory.items[0]?.count,
+        };
+      } finally {
+        database.close();
+      }
+    }, { name: dbName, id: await page.locator("#characterName").getAttribute("data-character-id") || await page.evaluate(() => document.querySelector("#characterName")?.dataset.characterId || "") });
+    assert.equal(combatSave.experience, 18);
+    assert.equal(combatSave.itemId, "slime-gel");
+    assert.equal(combatSave.itemCount, 1);
+    await page.reload({ waitUntil: "load" });
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    assert.equal(await page.locator("#monsterList .monster-card[data-spawn-id=\"slime-south\"] .monster-state").textContent(), "重生中");
+    logPass(onLog, "普通攻擊、擊敗怪物、獲得經驗／掉落及重載後狀態保存");
     await page.locator("#returnToCharacters").click();
     await page.waitForURL(url => url.pathname.endsWith("/offline/character/ui/index.html"));
     await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
@@ -142,7 +169,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.deepEqual(pageErrors, [], `角色 UI 發生 JavaScript 錯誤：${pageErrors.join("; ")}`);
     assert.deepEqual(externalRequests, [], `角色 UI 不應連線外部服務：${externalRequests.join("; ")}`);
     onLog("PASS：角色 UI 建立、編輯、選擇、重新載入及刪除測試");
-    return { passed: 9, failed: 0 };
+    return { passed: 10, failed: 0 };
   } finally {
     await page.close();
     cleanupPage = await browser.newPage();
