@@ -330,13 +330,39 @@ elements.editForm.addEventListener("submit", async event => {
   if (isBackupBusy) return;
   const characterId = elements.editId.value;
   try {
-    const updated = await db.updateCharacter(characterId, {
-      name: elements.editName.value,
-      classId: elements.editClassId.value,
-    });
+    const existing = await db.getCharacter(characterId);
+    const nextClassId = elements.editClassId.value;
+    let updated;
+    if (existing && existing.classId !== nextClassId) {
+      const save = await db.loadCharacterSave(characterId);
+      const skillPoints = (save.skills.points ?? 1) +
+        (save.skills.learned ?? []).reduce((total, skill) => total + skill.level, 0);
+      const result = await db.updateCharacterAndSaveData(
+        characterId,
+        {
+          name: elements.editName.value,
+          classId: nextClassId,
+        },
+        {
+          skills: {
+            points: Math.min(9999, skillPoints),
+            learned: [],
+            shortcuts: [],
+            cooldowns: {},
+          },
+        },
+      );
+      updated = result.character;
+      setStatus("角色已轉職；舊職業技能已重置並退還技能點數。", "success");
+    } else {
+      updated = await db.updateCharacter(characterId, {
+        name: elements.editName.value,
+        classId: nextClassId,
+      });
+      setStatus("角色「" + updated.name + "」已更新。", "success");
+    }
     closeEdit();
     await refreshCharacters();
-    setStatus("角色「" + updated.name + "」已更新。", "success");
   } catch (error) {
     setStatus(error?.message || "更新角色失敗。", "error");
   }
