@@ -372,9 +372,11 @@ function renderSkillBook(book) {
     description.textContent = skill.description;
     const details = document.createElement("p");
     details.className = "skill-details";
+    const cooldownRemaining = Math.max(0, (book.cooldowns[skill.skillId] || 0) - Date.now());
     details.textContent =
       "MP " + skill.mpCost + " · 冷卻 " + (skill.cooldownMs / 1000).toFixed(1) +
-      " 秒 · 距離 " + skill.range + " 格";
+      " 秒 · 距離 " + skill.range + " 格" +
+      (cooldownRemaining > 0 ? " · 剩餘 " + Math.ceil(cooldownRemaining / 1000) + " 秒" : " · 可施放");
 
     const requirement = document.createElement("p");
     requirement.className = "skill-requirement";
@@ -403,7 +405,13 @@ function renderSkillBook(book) {
       ));
     }
     if (skill.learned) {
-      actions.append(createSkillAction("施放技能", "cast", skill.skillId, null, skillBusy));
+      actions.append(createSkillAction(
+        "施放技能",
+        "cast",
+        skill.skillId,
+        null,
+        skillBusy || cooldownRemaining > 0 || book.character.mp.current < skill.mpCost,
+      ));
       for (let slot = 1; slot <= 4; slot += 1) {
         actions.append(createSkillAction(
           "設為快捷 " + slot,
