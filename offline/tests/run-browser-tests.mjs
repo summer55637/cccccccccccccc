@@ -63,6 +63,29 @@ try {
   assert.equal(uiResult.failed, 0, "角色 UI 測試不得失敗");
   process.stdout.write("PASS：" + uiResult.passed + " character lobby UI checks\n");
 
+  const progressionPage = await browser.newPage();
+  const progressionErrors = [];
+  progressionPage.on("pageerror", error => progressionErrors.push(error.message));
+  await progressionPage.route("**/*", route => {
+    const url = route.request().url();
+    return url.startsWith(baseUrl) ? route.continue() : route.abort();
+  });
+  const progressionResponse = await progressionPage.goto(baseUrl + "/offline/tests/progression-test.html", {
+    waitUntil: "load",
+    timeout: 30000,
+  });
+  assert.equal(progressionResponse?.status(), 200, "角色成長系統測試頁必須正常載入");
+  await progressionPage.locator("#run").click();
+  await progressionPage.locator("#status").filter({
+    hasText: "成功：9 項成長系統測試全部通過",
+  }).waitFor({ timeout: 30000 });
+  const progressionLog = await progressionPage.locator("#log").textContent();
+  assert.match(progressionLog || "", /全部通過：9 項成長系統測試/);
+  assert.deepEqual(progressionErrors, [], "角色成長測試頁發生 JavaScript 錯誤：" + progressionErrors.join("; "));
+  process.stdout.write(progressionLog || "");
+  process.stdout.write("\nPASS：9 character progression checks\n");
+  await progressionPage.close();
+
   const backupResult = await runBackupUITests({
     browser,
     baseUrl,
