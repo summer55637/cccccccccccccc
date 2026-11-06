@@ -312,6 +312,59 @@ export class OfflineCharacterDB {
     return this.loadCharacterSave(id);
   }
 
+  /**
+   * Atomically update character fields and one or more save parts.
+   * Used by item consumption and equipment changes to prevent partial saves.
+   */
+  async updateCharacterAndSaveData(characterId, patch, saveData) {
+    const id = textValue(characterId, "角色 ID");
+    if (!isObject(saveData)) throw new TypeError("存檔內容必須是物件。");
+    const normalized = {};
+    for (const [part, value] of Object.entries(saveData)) {
+      if (!SAVE_PARTS.has(part)) throw new Error(`不支援的存檔分類：${part}`);
+      normalized[part] = normalizePart(part, id, value);
+    }
+    if (Object.keys(normalized).length === 0) {
+      throw new Error("原子更新必須至少包含一個附屬存檔分類。");
+    }
+    const storeFor = {
+      inventory: STORES.inventories,
+      equipment: STORES.equipment,
+      skills: STORES.skills,
+      quests: STORES.quests,
+    };
+    const db = await this.open();
+    const names = [STORES.characters, ...Object.keys(normalized).map(part => storeFor[part])];
+    const tx = db.transaction(names, "readwrite");
+    const done = transactionComplete(tx);
+    let updatedCharacter = null;
+    let operationError = null;
+    const request = tx.objectStore(STORES.characters).get(id);
+    request.onsuccess = () => {
+      if (!request.result) {
+        operationError = new Error("找不到要更新的角色。");
+        tx.abort();
+        return;
+      }
+      try {
+        updatedCharacter = patchCharacter(request.result, patch);
+        tx.objectStore(STORES.characters).put(updatedCharacter);
+        for (const [part, record] of Object.entries(normalized)) {
+          tx.objectStore(storeFor[part]).put(record);
+        }
+      } catch (error) {
+        operationError = error;
+        tx.abort();
+      }
+    };
+    try {
+      await done;
+    } catch (error) {
+      throw operationError || dbError(error);
+    }
+    return this.loadCharacterSave(id);
+  }
+
   async loadCharacterSave(characterId) {
     const id = textValue(characterId, "角色 ID");
     const db = await this.open();
