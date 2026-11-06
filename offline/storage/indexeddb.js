@@ -335,6 +335,41 @@ export class OfflineCharacterDB {
     };
   }
 
+
+  async getSetting(key, fallback = null) {
+    const normalizedKey = textValue(key, "設定名稱", 128);
+    const database = await this.open();
+    const tx = database.transaction(STORES.settings, "readonly");
+    const done = transactionComplete(tx);
+    const record = await requestValue(tx.objectStore(STORES.settings).get(normalizedKey));
+    await done;
+    return record ? record.value : fallback;
+  }
+
+  async setSetting(key, value) {
+    const normalizedKey = textValue(key, "設定名稱", 128);
+    let serialized;
+    try {
+      serialized = JSON.stringify(value);
+    } catch {
+      throw new TypeError("設定值必須是可保存的 JSON 資料。");
+    }
+    if (serialized === undefined || serialized.length > 16_384) {
+      throw new RangeError("設定值不可為空的未定義值，且不可超過 16 KB。");
+    }
+    const safeValue = JSON.parse(serialized);
+    const database = await this.open();
+    const tx = database.transaction(STORES.settings, "readwrite");
+    const done = transactionComplete(tx);
+    tx.objectStore(STORES.settings).put({
+      key: normalizedKey,
+      value: safeValue,
+      updatedAt: new Date().toISOString(),
+    });
+    await done;
+    return safeValue;
+  }
+
   async deleteCharacter(characterId) {
     const id = textValue(characterId, "角色 ID");
     const db = await this.open();
