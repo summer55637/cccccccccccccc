@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111923">
+  <title>單機冒險世界｜遊戲主畫面</title>
+  <link rel="stylesheet" href="./screen.css">
+  <script type="module" src="./main.js"></script>
+</head>
+<body>
+  <div class="game-shell">
+    <header class="game-topbar">
+      <a class="game-brand" href="./index.html">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <span><strong>單機冒險世界</strong><small>OFFLINE ADVENTURE</small></span>
+      </a>
+      <div class="topbar-status"><span class="online-dot"></span>本機遊戲 · 不連接伺服器</div>
+      <button id="returnToCharacters" class="return-button" type="button">← 角色選擇</button>
+    </header>
+
+    <main>
+      <div id="gameStatus" class="game-status" role="status" aria-live="polite">正在讀取角色存檔……</div>
+
+      <div id="noCharacter" class="empty-game" hidden>
+        <div class="empty-game-symbol">✧</div>
+        <h1>尚未選擇角色</h1>
+        <p>請先回到角色管理畫面，選擇一位冒險者。</p>
+        <button id="goSelectCharacter" class="gold-button" type="button">返回角色選擇</button>
+      </div>
+
+      <div id="gameLayout" class="game-layout" hidden>
+        <aside class="character-sidebar">
+          <section class="game-panel hero-panel">
+            <p class="section-kicker">YOUR ADVENTURER</p>
+            <div class="hero-heading">
+              <div id="heroEmblem" class="hero-emblem" aria-hidden="true">⚔</div>
+              <div class="hero-title">
+                <h1 id="characterName">角色名稱</h1>
+                <p id="characterClass">職業 · Lv.1</p>
+              </div>
+            </div>
+            <div class="level-line"><strong id="characterLevel">Lv.1</strong><span id="jobLevel">職業等級 1</span></div>
+            <div class="bar-block">
+              <div class="bar-label"><strong>HP</strong><span id="hpText">100 / 100</span></div>
+              <div class="meter hp-meter"><span id="hpFill"></span></div>
+            </div>
+            <div class="bar-block">
+              <div class="bar-label"><strong>MP</strong><span id="mpText">50 / 50</span></div>
+              <div class="meter mp-meter"><span id="mpFill"></span></div>
+            </div>
+            <div class="bar-block exp-block">
+              <div class="bar-label"><strong>EXP</strong><span id="experienceText">0 / 100</span></div>
+              <div class="meter exp-meter"><span id="experienceFill"></span></div>
+            </div>
+          </section>
+
+          <section class="game-panel stats-panel">
+            <div class="panel-heading">
+              <div><p class="section-kicker">CHARACTER STATUS</p><h2>能力值</h2></div>
+              <span id="statPointBadge" class="point-badge">0 點</span>
+            </div>
+            <div id="statGrid" class="stat-grid"></div>
+            <p class="panel-note">升級可獲得能力點數，請在角色管理介面分配。</p>
+          </section>
+        </aside>
+
+        <section class="world-column">
+          <div class="world-heading">
+            <div><p class="section-kicker">WORLD VIEW</p><h2 id="worldTitle">新手村</h2></div>
+            <span class="zone-badge">和平區域</span>
+          </div>
+
+          <div class="world-stage" role="img" aria-label="自製新手村示意場景，目前尚未開放角色移動">
+            <div class="stage-sun"></div>
+            <div class="stage-hill hill-one"></div>
+            <div class="stage-hill hill-two"></div>
+            <div class="stage-tree tree-one"><i></i></div>
+            <div class="stage-tree tree-two"><i></i></div>
+            <div class="stage-tree tree-three"><i></i></div>
+            <div class="stage-path"></div>
+            <div class="stage-water"></div>
+            <div class="player-marker">
+              <span class="player-shadow"></span>
+              <span class="player-icon" id="worldAvatar">🛡️</span>
+              <span class="player-name" id="worldCharacterName">角色</span>
+            </div>
+            <div class="stage-location">安全區 · 新手村</div>
+            <div class="stage-locked">移動與地圖互動將於下一階段開放</div>
+          </div>
+
+          <section class="game-panel world-info">
+            <div>
+              <p class="section-kicker">ADVENTURE LOG</p>
+              <h3>冒險紀錄</h3>
+              <p id="adventureMessage">角色存檔已載入。這裡將顯示地圖事件、戰鬥紀錄及任務提醒。</p>
+            </div>
+            <div class="world-coordinates"><span>位置</span><strong id="positionText">0, 0</strong><span>地圖</span><strong id="mapIdText">start</strong></div>
+          </section>
+
+          <nav class="action-dock" aria-label="遊戲快捷功能">
+            <button type="button" data-feature="combat"><span>⚔</span><strong>攻擊</strong><small>第 4 階段</small></button>
+            <button type="button" data-feature="inventory"><span>▣</span><strong>背包</strong><small>第 5 階段</small></button>
+            <button type="button" data-feature="skills"><span>✧</span><strong>技能</strong><small>第 6 階段</small></button>
+            <button type="button" data-feature="quests"><span>◇</span><strong>任務</strong><small>後續開發</small></button>
+          </nav>
+        </section>
+
+        <aside class="feature-sidebar">
+          <section class="game-panel quick-panel">
+            <p class="section-kicker">ADVENTURE MENU</p>
+            <h2>冒險功能</h2>
+            <button type="button" class="feature-row" data-feature="map"><span>🗺️</span><span><strong>世界地圖</strong><small>第 3 階段開放</small></span><b>›</b></button>
+            <button type="button" class="feature-row" data-feature="combat"><span>⚔️</span><span><strong>戰鬥</strong><small>第 4 階段開放</small></span><b>›</b></button>
+            <button type="button" class="feature-row" data-feature="inventory"><span>🎒</span><span><strong>背包與裝備</strong><small>第 5 階段開放</small></span><b>›</b></button>
+            <button type="button" class="feature-row" data-feature="skills"><span>✨</span><span><strong>技能</strong><small>第 6 階段開放</small></span><b>›</b></button>
+            <button type="button" class="feature-row" data-feature="quests"><span>📜</span><span><strong>任務</strong><small>後續開發</small></span><b>›</b></button>
+          </section>
+
+          <section class="game-panel save-panel">
+            <p class="section-kicker">LOCAL SAVE</p>
+            <div class="save-check"><span>✓</span><strong>本機存檔已連接</strong></div>
+            <p>角色資料、能力值及經驗進度會保存到目前瀏覽器的 IndexedDB。</p>
+            <button id="backToLobby" class="quiet-return" type="button">角色管理與存檔</button>
+          </section>
+        </aside>
+      </div>
+      <footer class="game-footer"><span>單機原型 · 自製示意介面</span><span>地圖移動、戰鬥及功能模組依開發階段逐步開放</span></footer>
+    </main>
+  </div>
+</body>
+</html>
