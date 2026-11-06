@@ -165,7 +165,7 @@ try {
   await skillPage.locator("#run").click();
   try {
     await skillPage.locator("#status").filter({
-      hasText: "成功：13 項技能測試全部通過",
+      hasText: "成功：14 項技能測試全部通過",
     }).waitFor({ timeout: 30000 });
   } catch (error) {
     const statusText = await skillPage.locator("#status").textContent();
@@ -173,10 +173,10 @@ try {
     throw new Error("技能測試失敗。狀態：" + statusText + "\n測試紀錄：\n" + testLog + "\n原始錯誤：" + error.message);
   }
   const skillLog = await skillPage.locator("#log").textContent();
-  assert.match(skillLog || "", /全部通過：13 項技能測試/);
+  assert.match(skillLog || "", /全部通過：14 項技能測試/);
   assert.deepEqual(skillErrors, [], "技能測試頁發生 JavaScript 錯誤：" + skillErrors.join("; "));
   process.stdout.write(skillLog || "");
-  process.stdout.write("\nPASS：13 class skill checks\n");
+  process.stdout.write("\nPASS：14 class skill checks\n");
   await skillPage.close();
 
   const progressionPage = await browser.newPage();
