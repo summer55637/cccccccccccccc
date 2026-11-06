@@ -63,6 +63,35 @@ try {
   assert.equal(uiResult.failed, 0, "角色 UI 測試不得失敗");
   process.stdout.write("PASS：" + uiResult.passed + " character lobby UI checks\n");
 
+  const worldPage = await browser.newPage();
+  const worldErrors = [];
+  worldPage.on("pageerror", error => worldErrors.push(error.message));
+  await worldPage.route("**/*", route => {
+    const url = route.request().url();
+    return url.startsWith(baseUrl) ? route.continue() : route.abort();
+  });
+  const worldResponse = await worldPage.goto(baseUrl + "/offline/tests/world-test.html", {
+    waitUntil: "load",
+    timeout: 30000,
+  });
+  assert.equal(worldResponse?.status(), 200, "地圖移動測試頁必須正常載入");
+  await worldPage.locator("#run").click();
+  try {
+    await worldPage.locator("#status").filter({
+      hasText: "成功：9 項世界地圖測試全部通過",
+    }).waitFor({ timeout: 30000 });
+  } catch (error) {
+    const statusText = await worldPage.locator("#status").textContent();
+    const testLog = await worldPage.locator("#log").textContent();
+    throw new Error("地圖移動測試失敗。狀態：" + statusText + "\n測試紀錄：\n" + testLog + "\n原始錯誤：" + error.message);
+  }
+  const worldLog = await worldPage.locator("#log").textContent();
+  assert.match(worldLog || "", /全部通過：9 項世界地圖測試/);
+  assert.deepEqual(worldErrors, [], "地圖移動測試頁發生 JavaScript 錯誤：" + worldErrors.join("; "));
+  process.stdout.write(worldLog || "");
+  process.stdout.write("\nPASS：9 world movement checks\n");
+  await worldPage.close();
+
   const progressionPage = await browser.newPage();
   const progressionErrors = [];
   progressionPage.on("pageerror", error => progressionErrors.push(error.message));
