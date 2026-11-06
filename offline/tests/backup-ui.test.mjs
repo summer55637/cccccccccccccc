@@ -115,6 +115,38 @@ export async function runBackupUITests({ browser, baseUrl, onLog = () => {} }) {
     assert.match(permissionCheck, /取得使用者確認/);
     logPass(onLog, "未經明確確認的程式匯入會被拒絕");
 
+    const legacySkills = await page.evaluate(async ({ dbName: name, backupData }) => {
+      const { OfflineCharacterDB } = await import("/offline/storage/indexeddb.js");
+      const { importCharacterBackup } = await import("/offline/storage/backup.js");
+      const database = new OfflineCharacterDB({ dbName: name });
+      try {
+        await importCharacterBackup(database, backupData, { replaceExisting: true });
+        const save = await database.loadCharacterSave(backupData.data.characters[0].characterId);
+        return save.skills;
+      } finally {
+        database.close();
+      }
+    }, {
+      dbName,
+      backupData: {
+        ...JSON.parse(JSON.stringify(backup)),
+        data: {
+          ...JSON.parse(JSON.stringify(backup.data)),
+          skills: [{
+            characterId,
+            learned: [{ skillId: "power-strike", level: 2 }],
+          }],
+        },
+      },
+    });
+    assert.equal(legacySkills.points, 1);
+    assert.deepEqual(legacySkills.learned, [{ skillId: "power-strike", level: 2 }]);
+    assert.deepEqual(legacySkills.shortcuts, []);
+    assert.deepEqual(legacySkills.cooldowns, {});
+    await page.reload({ waitUntil: "load" });
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    logPass(onLog, "舊版僅含 learned 的技能備份仍可匯入並補齊欄位");
+
     await card.getByRole("button", { name: "刪除角色 備份騎士" }).click();
     await card.waitFor({ state: "detached" });
     assert.equal(await page.locator("#characterCount").textContent(), "0 位");
@@ -176,7 +208,7 @@ export async function runBackupUITests({ browser, baseUrl, onLog = () => {} }) {
     assert.deepEqual(pageErrors, [], "備份 UI 不得發生 JavaScript 錯誤：" + pageErrors.join("; "));
     assert.deepEqual(externalRequests, [], "備份 UI 不應連線外部服務：" + externalRequests.join("; "));
     onLog("PASS：完整備份匯出、確認後匯入及無效檔案防護");
-    return { passed: 8, failed: 0 };
+    return { passed: 9, failed: 0 };
   } finally {
     await page.close();
     const cleanupPage = await browser.newPage();
