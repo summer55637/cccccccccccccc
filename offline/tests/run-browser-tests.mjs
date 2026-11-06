@@ -4,7 +4,6 @@ import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright";
 import { runCharacterUITests } from "./character-ui.test.mjs";
 import { runBackupUITests } from "./backup-ui.test.mjs";
-import { runCombatTests } from "./combat.test.mjs";
 
 const baseUrl = "http://127.0.0.1:8081";
 const testUrl = baseUrl + "/offline/tests/indexeddb-test.html";
