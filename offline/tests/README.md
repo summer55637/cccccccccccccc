@@ -20,6 +20,10 @@ world-test.html 及 world.test.mjs 驗證新手村地圖尺寸、出生點、樹
 
 combat-test.html 及 combat.test.mjs 使用臨時 IndexedDB 驗證怪物資料、待機／警戒／攻擊 AI、攻擊距離、命中與落空、玩家 HP、怪物反擊、攻擊冷卻、經驗獎勵、掉落物保存、死亡狀態及怪物重生。角色 UI 整合測試另會實際進入遊戲、攻擊相鄰怪物、確認獎勵並重新載入遊戲頁。
 
+## 背包與裝備測試
+
+inventory-test.html 及 inventory.test.mjs 使用臨時 IndexedDB 驗證道具堆疊、紅／藍藥水、滿 HP 防止浪費、角色狀態與背包原子更新、丟棄、裝備更換及卸下、攻防加成、背包容量、未知道具拒絕及重開資料庫後持續保存。角色 UI 整合測試另會直接操作藥水、裝備及丟棄按鈕。
+
 ## 存檔備份測試
 
 backup-ui.test.mjs 驗證完整 JSON 匯出及還原流程：
@@ -33,6 +37,6 @@ backup-ui.test.mjs 驗證完整 JSON 匯出及還原流程：
 
 ## GitHub Actions
 
-推送到 offline/local-character-system 分支的 offline/** 檔案變更時，GitHub Actions 會安裝 Chromium 並執行 offline/tests/run-browser-tests.mjs。流程會依序執行 IndexedDB、角色管理介面與戰鬥整合、地圖移動、怪物戰鬥、角色成長及備份／還原測試。
+推送到 offline/local-character-system 分支的 offline/** 檔案變更時，GitHub Actions 會安裝 Chromium 並執行 offline/tests/run-browser-tests.mjs。流程會依序執行 IndexedDB、角色管理介面與戰鬥／背包整合、地圖移動、怪物戰鬥、背包與裝備、角色成長及備份／還原測試。
 
 各測試使用獨立的臨時 IndexedDB，結束後自動清除測試資料庫，不會刪除正式存檔，也不會連線原遊戲伺服器。
