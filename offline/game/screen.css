@@ -136,3 +136,176 @@ main { padding: 22px 0 16px; }
   .world-info { align-items: flex-start; }
   .game-footer { flex-direction: column; }
 }
+
+
+/* Interactive tile map and movement controls */
+.world-stage {
+  min-height: 0;
+  max-height: 520px;
+  aspect-ratio: 5 / 3;
+  background: #456347;
+}
+.world-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  overflow: hidden;
+  touch-action: manipulation;
+  background: #52734d;
+}
+.map-tile {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid rgba(220, 228, 183, .08);
+}
+.tile-grass {
+  background: linear-gradient(145deg, #6c8c56, #58794c);
+}
+.map-tile:nth-child(3n) { background-blend-mode: soft-light; }
+.tile-path {
+  background: linear-gradient(145deg, #b7a071, #9b8559);
+  border-color: rgba(234, 212, 159, .13);
+}
+.tile-tree {
+  background: linear-gradient(145deg, #4a6c47, #3c6042);
+}
+.tile-tree::before {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 5%;
+  bottom: 14%;
+  border-radius: 48% 52% 45% 50%;
+  background: radial-gradient(circle at 34% 28%, #a0bc78, #5d8a50 55%, #365c3c);
+  border: 1px solid rgba(210, 230, 172, .35);
+  box-shadow: 1px 2px 3px rgba(13, 31, 20, .4);
+}
+.tile-tree::after {
+  content: "";
+  position: absolute;
+  left: 43%;
+  bottom: 0;
+  width: 14%;
+  height: 30%;
+  background: #6e583d;
+}
+.tile-rock {
+  background: #64745b;
+}
+.tile-rock::before {
+  content: "";
+  position: absolute;
+  inset: 19% 12% 16%;
+  border-radius: 48% 44% 35% 39%;
+  background: linear-gradient(145deg, #c0c2a8, #737c70 68%, #505c52);
+  border: 1px solid rgba(229, 233, 208, .35);
+  box-shadow: 2px 3px 3px rgba(13, 31, 20, .25);
+}
+.tile-water {
+  background: repeating-linear-gradient(145deg, rgba(202, 228, 221, .16) 0 2px, transparent 2px 8px),
+    linear-gradient(145deg, #5d9bb0, #39718f);
+  border-color: rgba(176, 220, 227, .19);
+}
+.player-marker {
+  z-index: 5;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  pointer-events: none;
+}
+.player-shadow {
+  order: 2;
+  width: 52%;
+  height: 5px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: rgba(12, 25, 20, .46);
+  filter: blur(2px);
+}
+.player-icon {
+  position: static;
+  bottom: auto;
+  font-size: clamp(13px, 2.8vw, 25px);
+  line-height: 1.05;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .4));
+}
+.player-name {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 160%;
+  margin: 0;
+  padding: 2px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(6px, .72vw, 9px);
+  line-height: 1.2;
+  border-radius: 4px;
+}
+.stage-location { z-index: 6; }
+.stage-legend {
+  position: absolute;
+  z-index: 6;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 9px;
+  padding: 6px 8px;
+  color: #f5e3bf;
+  border: 1px solid rgba(227, 204, 164, .22);
+  border-radius: 7px;
+  background: rgba(15, 28, 22, .68);
+  font-size: 9px;
+}
+.stage-legend span { display: flex; align-items: center; gap: 4px; }
+.stage-legend i { width: 8px; height: 8px; display: inline-block; border-radius: 3px; }
+.legend-grass { background: #73935c; }
+.legend-tree { background: #4f7d48; }
+.legend-water { background: #5d9bb0; }
+.movement-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 14px;
+  border: 1px solid #344252;
+  border-radius: 12px;
+  background: rgba(26, 38, 51, .94);
+}
+.movement-help { display: grid; gap: 5px; }
+.movement-help strong { color: #e4c18b; font-size: 11px; }
+.movement-help span { color: #9eacb9; font-size: 10px; line-height: 1.5; }
+.dpad {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 39px);
+  grid-template-rows: repeat(2, 35px);
+  gap: 4px;
+}
+.dpad button {
+  border: 1px solid #566577;
+  border-radius: 8px;
+  color: #f0d4a7;
+  background: linear-gradient(180deg, #354657, #263545);
+  font-size: 17px;
+  font-weight: 800;
+  touch-action: manipulation;
+  user-select: none;
+}
+.dpad button:hover { border-color: #d2a86c; background: #48596a; }
+.dpad button:active { transform: translateY(1px); background: #5b4933; }
+@media (max-width: 700px) {
+  .world-stage { min-height: 0; aspect-ratio: 5 / 3; }
+  .movement-controls { align-items: center; padding: 10px; }
+  .movement-help span { max-width: 220px; }
+  .dpad { grid-template-columns: repeat(3, 42px); grid-template-rows: repeat(2, 39px); }
+  .stage-legend { top: auto; right: 7px; bottom: 8px; gap: 5px; padding: 5px 6px; font-size: 8px; }
+  .stage-location { top: 7px; left: 7px; }
+}
