@@ -65,6 +65,10 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.equal(await page.locator("#statPointsLabel").textContent(), "可用能力點數：3");
     assert.match(await page.locator("#experienceText").textContent(), /0 \/ 313|0\/313/);
     await page.locator('#statAllocation button[data-stat="str"]').click();
+    await page.waitForFunction(() =>
+      document.querySelector("#statDetails")?.textContent?.includes("STR 力量 13") &&
+      document.querySelector("#statPointsLabel")?.textContent === "可用能力點數：2"
+    );
     assert.match(await page.locator("#statDetails").textContent(), /STR 力量 13/);
     assert.equal(await page.locator("#statPointsLabel").textContent(), "可用能力點數：2");
     logPass(onLog, "經驗升級、能力點數獲得及分配後重新載入保存");
