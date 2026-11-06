@@ -47,7 +47,27 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.match(await firstCard.textContent(), /騎士/);
     assert.match(await firstCard.textContent(), /Lv\.1/);
     assert.equal(await page.locator("#selectedTitle").textContent(), "測試勇士");
+    assert.match(await page.locator("#statDetails").textContent(), /STR 力量 12/);
+    assert.match(await page.locator("#statDetails").textContent(), /VIT 體質 12/);
     logPass(onLog, "建立角色、初始化職業與自動選擇");
+
+    await page.evaluate(async ({ name, id }) => {
+      const { OfflineCharacterDB } = await import("/offline/storage/indexeddb.js");
+      const { awardExperience } = await import("/offline/game/progression/service.js");
+      const database = new OfflineCharacterDB({ dbName: name });
+      try { await awardExperience(database, id, 100); }
+      finally { database.close(); }
+    }, { name: dbName, id: await firstCard.getAttribute("data-character-id") });
+    await page.reload({ waitUntil: "load" });
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    await page.locator(".character-card").filter({ hasText: "測試勇士" }).waitFor({ state: "visible" });
+    assert.match(await page.locator(".character-card").filter({ hasText: "測試勇士" }).textContent(), /Lv\.2/);
+    assert.equal(await page.locator("#statPointsLabel").textContent(), "可用能力點數：3");
+    assert.match(await page.locator("#experienceText").textContent(), /0 \/ 314|0\/314/);
+    await page.locator('#statAllocation button[data-stat="str"]').click();
+    assert.match(await page.locator("#statDetails").textContent(), /STR 力量 13/);
+    assert.equal(await page.locator("#statPointsLabel").textContent(), "可用能力點數：2");
+    logPass(onLog, "經驗升級、能力點數獲得及分配後重新載入保存");
 
     await firstCard.getByRole("button", { name: "編輯角色 測試勇士" }).click();
     await page.locator("#editName").fill("測試魔導師");
@@ -96,7 +116,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.deepEqual(pageErrors, [], `角色 UI 發生 JavaScript 錯誤：${pageErrors.join("; ")}`);
     assert.deepEqual(externalRequests, [], `角色 UI 不應連線外部服務：${externalRequests.join("; ")}`);
     onLog("PASS：角色 UI 建立、編輯、選擇、重新載入及刪除測試");
-    return { passed: 8, failed: 0 };
+    return { passed: 9, failed: 0 };
   } finally {
     await page.close();
     cleanupPage = await browser.newPage();
