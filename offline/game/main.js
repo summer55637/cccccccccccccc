@@ -579,6 +579,7 @@ async function requestAttack(spawnId) {
     renderCharacter(character);
     renderMonsterList(monsters);
     await refreshInventoryDisplay();
+    await refreshSkillDisplay();
 
     let message;
     if (result.defeated) {
