@@ -98,7 +98,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.equal(await page.locator("#characterLevel").textContent(), "Lv.2");
     assert.match(await page.locator("#hpText").textContent(), /112 \/ 112/);
     assert.match(await page.locator("#mpText").textContent(), /53 \/ 53/);
-    assert.match(await page.locator("#statGrid").textContent(), /STR 力量\s+13/);
+    assert.equal((await page.locator("#statGrid").textContent()).includes("STR 力量 13"), true, "主畫面必須顯示已分配的 STR 值");
     assert.match(await page.locator("#gameStatus").textContent(), /本機角色存檔/);
     assert.equal(await page.locator("#positionText").textContent(), "9, 5");
     await page.keyboard.press("ArrowRight");
