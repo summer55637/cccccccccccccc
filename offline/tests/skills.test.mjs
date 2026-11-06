@@ -205,7 +205,7 @@ export async function runSkillTests({ onLog = () => {} } = {}) {
     const maxRank = book.skills.find(skill => skill.skillId === "double-shot");
     assert.equal(maxRank.level, 1);
     await expectReject(
-      () => castSkill(database, elf.characterId, "double-shot", "slime-west", { now: 20000, random: () => 0.1 }),
+      () => castSkill(database, elf.characterId, "double-shot", "boar-east", { now: 20000, random: () => 0.1 }),
       /技能距離不足/,
       "弓箭技能射程外目標",
     );
