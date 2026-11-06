@@ -1,4 +1,9 @@
 import { OfflineCharacterDB } from "../../storage/indexeddb.js";
+import {
+  exportCharacterBackup,
+  importCharacterBackup,
+  inspectCharacterBackup,
+} from "../../storage/backup.js";
 
 const CLASS_INFO = Object.freeze({
   knight: { label: "騎士", symbol: "⚔", description: "近身戰鬥" },
@@ -6,6 +11,7 @@ const CLASS_INFO = Object.freeze({
   wizard: { label: "法師", symbol: "✧", description: "魔法能力" },
   lord: { label: "領主", symbol: "♜", description: "均衡成長" },
 });
+const MAX_BACKUP_BYTES = 20 * 1024 * 1024;
 const params = new URLSearchParams(location.search);
 const dbName = params.get("dbName") || undefined;
 const db = new OfflineCharacterDB(dbName ? { dbName } : undefined);
@@ -29,11 +35,15 @@ const elements = {
   editName: document.querySelector("#editName"),
   editClassId: document.querySelector("#editClassId"),
   cancelEdit: document.querySelector("#cancelEditButton"),
+  exportBackup: document.querySelector("#exportBackupButton"),
+  importBackup: document.querySelector("#importBackupButton"),
+  importFile: document.querySelector("#importBackupFile"),
 };
 
 let characters = [];
 let selectedCharacterId = null;
 let isBusy = false;
+let isBackupBusy = false;
 
 function setStatus(message, kind = "info") {
   elements.status.textContent = message;
@@ -41,8 +51,20 @@ function setStatus(message, kind = "info") {
 }
 function setBusy(busy) {
   isBusy = busy;
-  elements.createButton.disabled = busy;
+  elements.createButton.disabled = busy || document.documentElement.dataset.ready !== "true";
   elements.createButton.textContent = busy ? "處理中……" : "建立角色";
+}
+function setBackupBusy(busy) {
+  isBackupBusy = busy;
+  elements.exportBackup.disabled = busy || document.documentElement.dataset.ready !== "true";
+  elements.importBackup.disabled = busy || document.documentElement.dataset.ready !== "true";
+  if (busy) {
+    elements.createButton.disabled = true;
+    elements.exportBackup.textContent = "處理中……";
+  } else {
+    elements.exportBackup.textContent = "下載存檔備份";
+    elements.createButton.disabled = isBusy || document.documentElement.dataset.ready !== "true";
+  }
 }
 function getClassInfo(classId) {
   return CLASS_INFO[classId] || { label: classId, symbol: "✦", description: "自訂職業" };
@@ -71,20 +93,20 @@ function renderSelected() {
   elements.selectedTitle.textContent = character.name;
   elements.selectedDetails.replaceChildren(
     makeChip(classInfo.label),
-    makeChip(`等級 Lv.${character.level}`),
-    makeChip(`HP ${character.hp.current}/${character.hp.max}`),
-    makeChip(`MP ${character.mp.current}/${character.mp.max}`),
-    makeChip(`金幣 ${character.gold}`),
+    makeChip("等級 Lv." + character.level),
+    makeChip("HP " + character.hp.current + "/" + character.hp.max),
+    makeChip("MP " + character.mp.current + "/" + character.mp.max),
+    makeChip("金幣 " + character.gold),
   );
 }
 function renderCharacters() {
-  elements.count.textContent = `${characters.length} 位`;
+  elements.count.textContent = characters.length + " 位";
   elements.empty.hidden = characters.length > 0;
   elements.list.replaceChildren();
 
   for (const character of characters) {
     const classInfo = getClassInfo(character.classId);
-    const card = createElement("article", `character-card${character.characterId === selectedCharacterId ? " is-selected" : ""}`);
+    const card = createElement("article", "character-card" + (character.characterId === selectedCharacterId ? " is-selected" : ""));
     card.dataset.characterId = character.characterId;
 
     const emblem = createElement("div", "class-emblem", classInfo.symbol);
@@ -92,23 +114,23 @@ function renderCharacters() {
     const copy = createElement("div", "character-copy");
     copy.append(
       createElement("h3", "", character.name),
-      createElement("p", "", `${classInfo.label} · Lv.${character.level} · Job ${character.jobLevel}`),
-      createElement("p", "", `HP ${character.hp.current}/${character.hp.max} · MP ${character.mp.current}/${character.mp.max}`),
-      createElement("p", "", `最後更新：${formatDate(character.updatedAt)}`),
+      createElement("p", "", classInfo.label + " · Lv." + character.level + " · Job " + character.jobLevel),
+      createElement("p", "", "HP " + character.hp.current + "/" + character.hp.max + " · MP " + character.mp.current + "/" + character.mp.max),
+      createElement("p", "", "最後更新：" + formatDate(character.updatedAt)),
     );
     const actions = createElement("div", "character-actions");
     const selectButton = createElement("button", "small-button", character.characterId === selectedCharacterId ? "已選擇" : "選擇");
     selectButton.type = "button";
     selectButton.dataset.action = "select";
-    selectButton.setAttribute("aria-label", `選擇角色 ${character.name}`);
+    selectButton.setAttribute("aria-label", "選擇角色 " + character.name);
     const editButton = createElement("button", "small-button", "編輯");
     editButton.type = "button";
     editButton.dataset.action = "edit";
-    editButton.setAttribute("aria-label", `編輯角色 ${character.name}`);
+    editButton.setAttribute("aria-label", "編輯角色 " + character.name);
     const deleteButton = createElement("button", "small-button danger", "刪除");
     deleteButton.type = "button";
     deleteButton.dataset.action = "delete";
-    deleteButton.setAttribute("aria-label", `刪除角色 ${character.name}`);
+    deleteButton.setAttribute("aria-label", "刪除角色 " + character.name);
     actions.append(selectButton, editButton, deleteButton);
     card.append(emblem, copy, actions);
     elements.list.append(card);
@@ -129,7 +151,7 @@ async function selectCharacter(characterId) {
   await db.setSetting("selectedCharacterId", characterId);
   selectedCharacterId = characterId;
   renderCharacters();
-  setStatus(`已選擇角色「${character.name}」。角色資料已保存在本機。`, "success");
+  setStatus("已選擇角色「" + character.name + "」。角色資料已保存在本機。", "success");
 }
 function openEdit(character) {
   elements.editId.value = character.characterId;
@@ -158,7 +180,7 @@ async function handleCardAction(event) {
     } else if (button.dataset.action === "edit") {
       openEdit(character);
     } else if (button.dataset.action === "delete") {
-      const confirmed = window.confirm(`確定刪除角色「${character.name}」嗎？這會一併刪除該角色的本機背包、裝備、技能及任務資料。`);
+      const confirmed = window.confirm("確定刪除角色「" + character.name + "」嗎？這會一併刪除該角色的本機背包、裝備、技能及任務資料。");
       if (!confirmed) return;
       await db.deleteCharacter(characterId);
       if (selectedCharacterId === characterId) {
@@ -167,16 +189,80 @@ async function handleCardAction(event) {
       }
       closeEdit();
       await refreshCharacters();
-      setStatus(`角色「${character.name}」已刪除。`, "success");
+      setStatus("角色「" + character.name + "」已刪除。", "success");
     }
   } catch (error) {
     setStatus(error?.message || "操作失敗，請再試一次。", "error");
   }
 }
 
+async function downloadBackup() {
+  if (isBackupBusy) return;
+  setBackupBusy(true);
+  try {
+    const backup = await exportCharacterBackup(db);
+    const json = JSON.stringify(backup, null, 2);
+    const byteLength = new TextEncoder().encode(json).byteLength;
+    if (byteLength > MAX_BACKUP_BYTES) throw new RangeError("備份檔超過 20 MB，請減少存檔資料後再試。");
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    link.href = objectUrl;
+    link.download = "offline-adventure-save-" + timestamp + ".json";
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    setStatus("已下載完整備份，包含 " + backup.data.characters.length + " 位角色及所有存檔資料。", "success");
+  } catch (error) {
+    setStatus(error?.message || "下載備份失敗。", "error");
+  } finally {
+    setBackupBusy(false);
+  }
+}
+
+async function importBackupFile(file) {
+  if (!file) return;
+  if (isBackupBusy) return;
+  setBackupBusy(true);
+  try {
+    if (file.size > MAX_BACKUP_BYTES) throw new RangeError("備份檔超過 20 MB，無法匯入。");
+    const text = await file.text();
+    let backup;
+    try {
+      backup = JSON.parse(text);
+    } catch {
+      throw new Error("備份 JSON 格式錯誤，請選擇正確的備份檔。");
+    }
+    const info = inspectCharacterBackup(backup);
+    const createdAt = formatDate(info.exportedAt);
+    const confirmed = window.confirm(
+      "備份日期：" + createdAt + "\n" +
+      "包含角色：" + info.characterCount + " 位\n\n" +
+      "警告：匯入後會取代這個瀏覽器目前的所有角色、背包、裝備、技能、任務及設定。\n" +
+      "建議先下載目前存檔備份。\n\n確定要還原這份備份嗎？",
+    );
+    if (!confirmed) {
+      setStatus("已取消匯入，原有存檔沒有變更。", "info");
+      return;
+    }
+    const result = await importCharacterBackup(db, backup, { replaceExisting: true });
+    closeEdit();
+    await refreshCharacters();
+    setStatus("備份還原成功，已恢復 " + result.characterCount + " 位角色及其存檔資料。", "success");
+  } catch (error) {
+    setStatus(error?.message || "匯入備份失敗，原有存檔沒有變更。", "error");
+  } finally {
+    elements.importFile.value = "";
+    setBackupBusy(false);
+  }
+}
+
 elements.createForm.addEventListener("submit", async event => {
   event.preventDefault();
-  if (isBusy) return;
+  if (isBusy || isBackupBusy) return;
   setBusy(true);
   try {
     const character = await db.createCharacter({
@@ -188,7 +274,7 @@ elements.createForm.addEventListener("submit", async event => {
     elements.createForm.reset();
     elements.classId.value = "knight";
     elements.name.focus();
-    setStatus(`角色「${character.name}」建立成功，已自動選擇。`, "success");
+    setStatus("角色「" + character.name + "」建立成功，已自動選擇。", "success");
   } catch (error) {
     setStatus(error?.message || "建立角色失敗。", "error");
   } finally {
@@ -200,6 +286,7 @@ elements.list.addEventListener("click", handleCardAction);
 
 elements.editForm.addEventListener("submit", async event => {
   event.preventDefault();
+  if (isBackupBusy) return;
   const characterId = elements.editId.value;
   try {
     const updated = await db.updateCharacter(characterId, {
@@ -208,7 +295,7 @@ elements.editForm.addEventListener("submit", async event => {
     });
     closeEdit();
     await refreshCharacters();
-    setStatus(`角色「${updated.name}」已更新。`, "success");
+    setStatus("角色「" + updated.name + "」已更新。", "success");
   } catch (error) {
     setStatus(error?.message || "更新角色失敗。", "error");
   }
@@ -221,7 +308,13 @@ elements.enter.addEventListener("click", () => {
     setStatus("請先選擇一位角色。", "error");
     return;
   }
-  setStatus(`已選擇「${character.name}」。遊戲地圖及戰鬥尚未接入；角色資料已保存，可以安全離開此頁。`, "success");
+  setStatus("已選擇「" + character.name + "」。遊戲地圖及戰鬥尚未接入；角色資料已保存，可以安全離開此頁。", "success");
+});
+
+elements.exportBackup.addEventListener("click", downloadBackup);
+elements.importBackup.addEventListener("click", () => elements.importFile.click());
+elements.importFile.addEventListener("change", async event => {
+  await importBackupFile(event.target.files?.[0]);
 });
 
 window.addEventListener("pagehide", () => db.close());
@@ -230,9 +323,11 @@ async function initialize() {
   try {
     await db.open();
     await refreshCharacters();
-    elements.createButton.disabled = false;
-    setStatus("本機角色資料庫已就緒。此頁不會連接原遊戲伺服器。", "success");
     document.documentElement.dataset.ready = "true";
+    elements.createButton.disabled = false;
+    elements.exportBackup.disabled = false;
+    elements.importBackup.disabled = false;
+    setStatus("本機角色資料庫已就緒。此頁不會連接原遊戲伺服器。", "success");
   } catch (error) {
     setStatus(error?.message || "無法開啟本機資料庫。請使用 localhost 或 HTTPS。", "error");
     document.documentElement.dataset.ready = "error";
