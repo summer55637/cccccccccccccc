@@ -38,6 +38,15 @@ export const ITEM_DEFINITIONS = Object.freeze({
     attackBonus: 4,
     stackLimit: 1,
   }),
+  "bronze-sword": Object.freeze({
+    itemId: "bronze-sword",
+    name: "青銅短劍",
+    type: "equipment",
+    slot: "weapon",
+    description: "普通攻擊傷害 +2。",
+    attackBonus: 2,
+    stackLimit: 1,
+  }),
   "leather-armor": Object.freeze({
     itemId: "leather-armor",
     name: "皮革護甲",
