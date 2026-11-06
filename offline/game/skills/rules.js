@@ -5,13 +5,16 @@ function checkedRoll(value) {
   return value;
 }
 
-export function calculateSkillAttack(character, definition, skillLevel, equipmentBonus, roll) {
+export function calculateSkillAttack(character, definition, skillLevel, equipmentBonus, roll, targetDefense = 0) {
   if (!character?.stats || !definition) throw new TypeError("技能攻擊缺少角色或技能資料。");
   if (!Number.isSafeInteger(skillLevel) || skillLevel < 1 || skillLevel > definition.maxLevel) {
     throw new RangeError("技能等級超出可用範圍。");
   }
   if (!Number.isSafeInteger(equipmentBonus) || equipmentBonus < 0 || equipmentBonus > 100_000) {
     throw new RangeError("裝備攻擊加成格式不正確。");
+  }
+  if (!Number.isSafeInteger(targetDefense) || targetDefense < 0 || targetDefense > 100_000) {
+    throw new RangeError("目標防禦值格式不正確。");
   }
   const hit = checkedRoll(roll) < definition.hitChance;
   const attributeValue = character.stats[definition.attribute];
@@ -24,7 +27,7 @@ export function calculateSkillAttack(character, definition, skillLevel, equipmen
   );
   return {
     hit,
-    damage: hit ? Math.max(1, rawDamage) : 0,
+    damage: hit ? Math.max(1, rawDamage - targetDefense) : 0,
     rawDamage,
   };
 }
