@@ -16,7 +16,7 @@ function assertDatabase(database) {
 
 function skillRecord(save) {
   return {
-    points: save.skills.points ?? 0,
+    points: save.skills.points ?? 1,
     learned: save.skills.learned ?? [],
     shortcuts: save.skills.shortcuts ?? [],
     cooldowns: save.skills.cooldowns ?? {},
