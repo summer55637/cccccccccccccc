@@ -267,6 +267,7 @@ export async function castSkillOnMonster(database, characterId, spawnId, skill, 
     skillLevel,
     bonuses.attackBonus,
     checkedRandom(random),
+    spawn.definition.defense,
   );
 
   const skills = {
