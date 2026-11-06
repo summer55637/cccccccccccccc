@@ -45,7 +45,7 @@ export async function awardExperience(database, characterId, amount) {
   let updated;
   if (result.levelUps.length > 0) {
     const skills = {
-      points: save.skills.points ?? 0,
+      points: save.skills.points ?? 1,
       learned: save.skills.learned ?? [],
       shortcuts: save.skills.shortcuts ?? [],
       cooldowns: save.skills.cooldowns ?? {},
