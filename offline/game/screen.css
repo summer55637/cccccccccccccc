@@ -535,3 +535,71 @@ main { padding: 22px 0 16px; }
 @media (max-width: 600px) {
   .inventory-list, .equipment-slots { grid-template-columns: minmax(0, 1fr); }
 }
+
+
+/* Original offline class skillbook and shortcuts */
+.skill-panel { display: grid; gap: 10px; }
+.skill-summary { margin: 0; color: #aebbc6; font-size: 10px; line-height: 1.6; }
+.skill-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+.skill-shortcut {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  padding: 9px 7px;
+  border: 1px solid #806546;
+  border-radius: 8px;
+  color: #ead5b2;
+  background: linear-gradient(180deg, #4c4134, #2b3238);
+  text-align: left;
+  cursor: pointer;
+}
+.skill-shortcut:disabled {
+  border-color: #3b4854;
+  color: #778592;
+  background: #222e37;
+  cursor: not-allowed;
+}
+.skill-shortcut small { color: #b79b72; font-size: 8px; }
+.skill-shortcut strong { overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.skill-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.skill-card {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid #3d4b58;
+  border-radius: 9px;
+  background: linear-gradient(145deg, rgba(38, 53, 62, .92), rgba(25, 37, 46, .96));
+}
+.skill-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 7px; }
+.skill-card-heading strong { color: #f0dfc5; font-size: 10px; }
+.skill-rank { flex: 0 0 auto; color: #e5c28b; font-size: 9px; }
+.skill-card > p { margin: 0; color: #aab8c5; font-size: 9px; line-height: 1.5; }
+.skill-card .skill-details { color: #c6b28f; }
+.skill-card .skill-requirement { color: #91a7b0; }
+.skill-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+.skill-action {
+  min-height: 26px;
+  padding: 4px 7px;
+  border: 1px solid #586977;
+  border-radius: 6px;
+  color: #dce5eb;
+  background: #344552;
+  font: inherit;
+  font-size: 8px;
+  cursor: pointer;
+}
+.skill-action.action-learn, .skill-action.action-cast {
+  border-color: #92734e;
+  color: #f1d8ae;
+  background: #54432f;
+}
+.skill-action:disabled { opacity: .42; cursor: not-allowed; }
+@media (max-width: 600px) {
+  .skill-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .skill-list { grid-template-columns: minmax(0, 1fr); }
+}
