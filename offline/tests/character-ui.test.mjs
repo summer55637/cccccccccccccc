@@ -98,12 +98,24 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.equal(await page.locator("#characterLevel").textContent(), "Lv.2");
     assert.match(await page.locator("#hpText").textContent(), /112 \/ 112/);
     assert.match(await page.locator("#mpText").textContent(), /53 \/ 53/);
-    assert.match(await page.locator("#statGrid").textContent(), /STR 力量 13/);
+    assert.match(await page.locator("#statGrid").textContent(), /STR 力量\s+13/);
     assert.match(await page.locator("#gameStatus").textContent(), /本機角色存檔/);
+    assert.equal(await page.locator("#positionText").textContent(), "9, 5");
+    await page.keyboard.press("ArrowRight");
+    await page.waitForFunction(() => document.querySelector("#positionText")?.textContent === "10, 5");
+    assert.equal(await page.locator("#playerMarker").evaluate(element => element.style.gridColumnStart), "11");
+    await page.locator('button[data-move="right"]').click();
+    await page.locator("#gameStatus").filter({ hasText: "前方有樹木" }).waitFor();
+    assert.equal(await page.locator("#positionText").textContent(), "10, 5");
+    await page.locator('button[data-move="down"]').click();
+    await page.waitForFunction(() => document.querySelector("#positionText")?.textContent === "10, 6");
+    await page.reload({ waitUntil: "load" });
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    assert.equal(await page.locator("#positionText").textContent(), "10, 6");
     await page.locator("#returnToCharacters").click();
     await page.waitForURL(url => url.pathname.endsWith("/offline/character/ui/index.html"));
     await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
-    logPass(onLog, "進入遊戲主畫面讀取角色狀態，再返回角色選擇");
+    logPass(onLog, "進入遊戲、鍵盤／觸控移動、碰撞阻擋及位置持續保存");
 
     await page.locator("#characterName").fill("試驗精靈");
     await page.locator("#classId").selectOption("elf");
