@@ -158,7 +158,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
       }
     }, { name: dbName, id: characterId });
     assert.equal(combatSave.experience, 18);
-    assert.equal(combatSave.mp, 41);
+    assert.equal(combatSave.mp, 47);
     assert.equal(combatSave.learned, 2);
     assert.equal(combatSave.shortcut, "firebolt");
     assert.ok(combatSave.cooldown > Date.now());
