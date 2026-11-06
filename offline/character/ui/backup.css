@@ -1,0 +1,7 @@
+.backup-panel { margin-top: 18px; }
+.backup-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.backup-actions .small-button { min-height: 40px; padding: 9px 15px; }
+.backup-panel .field-help { max-width: 760px; margin-top: 12px; }
+@media (max-width: 480px) {
+  .backup-actions .small-button { flex: 1; }
+}
