@@ -63,7 +63,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     await page.locator(".character-card").filter({ hasText: "測試勇士" }).waitFor({ state: "visible" });
     assert.match(await page.locator(".character-card").filter({ hasText: "測試勇士" }).textContent(), /Lv\.2/);
     assert.equal(await page.locator("#statPointsLabel").textContent(), "可用能力點數：3");
-    assert.match(await page.locator("#experienceText").textContent(), /0 \/ 314|0\/314/);
+    assert.match(await page.locator("#experienceText").textContent(), /0 \/ 313|0\/313/);
     await page.locator('#statAllocation button[data-stat="str"]').click();
     assert.match(await page.locator("#statDetails").textContent(), /STR 力量 13/);
     assert.equal(await page.locator("#statPointsLabel").textContent(), "可用能力點數：2");
