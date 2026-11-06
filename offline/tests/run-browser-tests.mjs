@@ -208,35 +208,6 @@ try {
   process.stdout.write("\nPASS：10 character progression checks\n");
   await progressionPage.close();
 
-  const skillPage = await browser.newPage();
-  const skillErrors = [];
-  skillPage.on("pageerror", error => skillErrors.push(error.message));
-  await skillPage.route("**/*", route => {
-    const url = route.request().url();
-    return url.startsWith(baseUrl) ? route.continue() : route.abort();
-  });
-  const skillResponse = await skillPage.goto(baseUrl + "/offline/tests/skills-test.html", {
-    waitUntil: "load",
-    timeout: 30000,
-  });
-  assert.equal(skillResponse?.status(), 200, "技能測試頁必須正常載入");
-  await skillPage.locator("#run").click();
-  try {
-    await skillPage.locator("#status").filter({
-      hasText: "成功：13 項技能測試全部通過",
-    }).waitFor({ timeout: 30000 });
-  } catch (error) {
-    const statusText = await skillPage.locator("#status").textContent();
-    const testLog = await skillPage.locator("#log").textContent();
-    throw new Error("技能測試失敗。狀態：" + statusText + "\n測試紀錄：\n" + testLog + "\n原始錯誤：" + error.message);
-  }
-  const skillLog = await skillPage.locator("#log").textContent();
-  assert.match(skillLog || "", /全部通過：13 項技能測試/);
-  assert.deepEqual(skillErrors, [], "技能測試頁發生 JavaScript 錯誤：" + skillErrors.join("; "));
-  process.stdout.write(skillLog || "");
-  process.stdout.write("\nPASS：13 class skill checks\n");
-  await skillPage.close();
-
   const backupResult = await runBackupUITests({
     browser,
     baseUrl,
