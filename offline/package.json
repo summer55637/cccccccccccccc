@@ -1,0 +1,6 @@
+{
+  "name": "offline-character-system",
+  "private": true,
+  "type": "module",
+  "description": "Isolated browser-side character database tests"
+}
