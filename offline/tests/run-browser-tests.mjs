@@ -121,6 +121,35 @@ try {
   process.stdout.write("\nPASS：11 monster and combat checks\n");
   await combatPage.close();
 
+  const inventoryPage = await browser.newPage();
+  const inventoryErrors = [];
+  inventoryPage.on("pageerror", error => inventoryErrors.push(error.message));
+  await inventoryPage.route("**/*", route => {
+    const url = route.request().url();
+    return url.startsWith(baseUrl) ? route.continue() : route.abort();
+  });
+  const inventoryResponse = await inventoryPage.goto(baseUrl + "/offline/tests/inventory-test.html", {
+    waitUntil: "load",
+    timeout: 30000,
+  });
+  assert.equal(inventoryResponse?.status(), 200, "背包測試頁必須正常載入");
+  await inventoryPage.locator("#run").click();
+  try {
+    await inventoryPage.locator("#status").filter({
+      hasText: "成功：16 項背包測試全部通過",
+    }).waitFor({ timeout: 30000 });
+  } catch (error) {
+    const statusText = await inventoryPage.locator("#status").textContent();
+    const testLog = await inventoryPage.locator("#log").textContent();
+    throw new Error("背包測試失敗。狀態：" + statusText + "\n測試紀錄：\n" + testLog + "\n原始錯誤：" + error.message);
+  }
+  const inventoryLog = await inventoryPage.locator("#log").textContent();
+  assert.match(inventoryLog || "", /全部通過：16 項背包與裝備測試/);
+  assert.deepEqual(inventoryErrors, [], "背包測試頁發生 JavaScript 錯誤：" + inventoryErrors.join("; "));
+  process.stdout.write(inventoryLog || "");
+  process.stdout.write("\nPASS：16 inventory and equipment checks\n");
+  await inventoryPage.close();
+
   const progressionPage = await browser.newPage();
   const progressionErrors = [];
   progressionPage.on("pageerror", error => progressionErrors.push(error.message));
