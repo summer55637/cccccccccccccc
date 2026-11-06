@@ -11,6 +11,13 @@ import {
   unequipItem,
   useItem,
 } from "./inventory/service.js";
+import {
+  assignSkillShortcut,
+  castSkill,
+  getSkillBook,
+  learnSkill,
+} from "./skills/service.js";
+import { getSkillDefinition } from "./skills/definitions.js";
 
 const CLASS_INFO = Object.freeze({
   knight: { label: "騎士", emblem: "⚔" },
@@ -57,6 +64,9 @@ const elements = {
   inventoryItemCount: document.querySelector("#inventoryItemCount"),
   equipmentSlots: document.querySelector("#equipmentSlots"),
   equipmentBonusText: document.querySelector("#equipmentBonusText"),
+  skillPointBadge: document.querySelector("#skillPointBadge"),
+  skillShortcuts: document.querySelector("#skillShortcuts"),
+  skillList: document.querySelector("#skillList"),
 };
 let character = null;
 let moving = false;
@@ -64,6 +74,7 @@ let playerMarker = null;
 let monsters = [];
 let attacking = false;
 let inventoryBusy = false;
+let skillBusy = false;
 
 function setStatus(message, kind = "info") {
   elements.status.textContent = message;
@@ -310,6 +321,170 @@ async function refreshInventoryDisplay() {
   renderCharacter(character);
   renderInventory(save);
 }
+function createSkillAction(label, action, skillId, slot = null, disabled = false) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "skill-action action-" + action;
+  button.dataset.skillAction = action;
+  button.dataset.skillId = skillId;
+  if (slot !== null) button.dataset.slot = String(slot);
+  button.disabled = disabled;
+  button.textContent = label;
+  return button;
+}
+function renderSkillBook(book) {
+  if (!book || !elements.skillList) return;
+  elements.skillPointBadge.textContent = "技能點數 " + book.points;
+  const shortcuts = [];
+  for (let slot = 1; slot <= 4; slot += 1) {
+    const assigned = book.shortcuts.find(item => item.slot === slot);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "skill-shortcut";
+    button.dataset.castShortcut = String(slot);
+    const skill = assigned && book.skills.find(item => item.skillId === assigned.skillId);
+    button.disabled = !skill;
+    button.innerHTML = "";
+    const slotLabel = document.createElement("small");
+    slotLabel.textContent = "快捷 " + slot;
+    const skillName = document.createElement("strong");
+    skillName.textContent = skill ? skill.name + " Lv." + skill.level : "空位";
+    button.append(slotLabel, skillName);
+    shortcuts.push(button);
+  }
+  elements.skillShortcuts.replaceChildren(...shortcuts);
+
+  const cards = book.skills.map(skill => {
+    const card = document.createElement("article");
+    card.className = "skill-card";
+    card.dataset.skillId = skill.skillId;
+
+    const heading = document.createElement("div");
+    heading.className = "skill-card-heading";
+    const name = document.createElement("strong");
+    name.textContent = skill.name;
+    const rank = document.createElement("span");
+    rank.className = "skill-rank";
+    rank.textContent = skill.learned ? "Lv." + skill.level + " / " + skill.maxLevel : "尚未學習";
+    heading.append(name, rank);
+
+    const description = document.createElement("p");
+    description.textContent = skill.description;
+    const details = document.createElement("p");
+    details.className = "skill-details";
+    details.textContent =
+      "MP " + skill.mpCost + " · 冷卻 " + (skill.cooldownMs / 1000).toFixed(1) +
+      " 秒 · 距離 " + skill.range + " 格";
+
+    const requirement = document.createElement("p");
+    requirement.className = "skill-requirement";
+    const nextLevel = skill.nextLevel;
+    if (skill.maxed) {
+      requirement.textContent = "已達最高等級";
+    } else if (!skill.levelMet) {
+      requirement.textContent = "需要角色 Lv." + skill.requiredLevel;
+    } else if (!skill.prerequisiteMet) {
+      requirement.textContent = "需要先提升前置技能";
+    } else {
+      requirement.textContent = skill.learned
+        ? "升級需要 1 點技能點數"
+        : "學習需要 1 點技能點數";
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "skill-actions";
+    if (!skill.maxed) {
+      actions.append(createSkillAction(
+        skill.learned ? "升級技能" : "學習技能",
+        "learn",
+        skill.skillId,
+        null,
+        !skill.canLearn || skillBusy,
+      ));
+    }
+    if (skill.learned) {
+      actions.append(createSkillAction("施放技能", "cast", skill.skillId, null, skillBusy));
+      for (let slot = 1; slot <= 4; slot += 1) {
+        actions.append(createSkillAction(
+          "設為快捷 " + slot,
+          "assign",
+          skill.skillId,
+          slot,
+          skillBusy,
+        ));
+      }
+    }
+    card.append(heading, description, details, requirement, actions);
+    return card;
+  });
+  elements.skillList.replaceChildren(...cards);
+}
+async function refreshSkillDisplay() {
+  if (!character) return;
+  const book = await getSkillBook(database, character.characterId);
+  renderSkillBook(book);
+}
+async function requestSkillAction(action, skillId, slot = null) {
+  if (!character || skillBusy) return;
+  skillBusy = true;
+  try {
+    if (action === "learn") {
+      await learnSkill(database, character.characterId, skillId);
+      setStatus("已學習／提升技能「" + getSkillDefinition(skillId).name + "」。", "success");
+    } else if (action === "assign") {
+      await assignSkillShortcut(database, character.characterId, skillId, slot);
+      setStatus("已將「" + getSkillDefinition(skillId).name + "」放入快捷欄 " + slot + "。", "success");
+    } else if (action === "cast") {
+      await requestCastSkill(skillId);
+      return;
+    }
+    await refreshSkillDisplay();
+  } catch (error) {
+    setStatus(error?.message || "技能操作失敗。", "error");
+  } finally {
+    skillBusy = false;
+    await refreshSkillDisplay();
+  }
+}
+async function requestCastSkill(skillId) {
+  if (!character) return;
+  const skill = getSkillDefinition(skillId);
+  const target = monsters
+    .filter(monster => monster.hp > 0 && monster.distance <= skill.range)
+    .sort((first, second) => first.distance - second.distance)[0];
+  if (!target) {
+    setStatus("技能範圍內沒有可攻擊的怪物。", "info");
+    return;
+  }
+  skillBusy = true;
+  try {
+    const result = await castSkill(database, character.characterId, skillId, target.spawnId);
+    character = result.character;
+    await refreshCombatDisplay();
+    renderCharacter(character);
+    await refreshInventoryDisplay();
+    await refreshSkillDisplay();
+
+    let message = result.hit
+      ? "施放「" + result.skillName + "」，對 " + target.name + " 造成 " + result.damage + " 點傷害。"
+      : "施放「" + result.skillName + "」，但攻擊落空。";
+    if (result.defeated) {
+      message += " 擊敗怪物，獲得 " + formatNumber(result.experience) + " EXP。";
+      if (result.loot?.added) message += " 取得「" + result.loot.name + "」。";
+      else if (result.loot) message += " 背包已滿，未拾取「" + result.loot.name + "」。";
+      if (result.levelUps.length) message += " 升級至 Lv." + character.level + "。";
+    } else if (result.counterAttack.hit) {
+      message += " 怪物反擊，造成 " + result.counterAttack.damage + " 點傷害。";
+    }
+    document.querySelector("#adventureMessage").textContent = message;
+    setStatus(message, result.defeated ? "success" : "info");
+  } catch (error) {
+    setStatus(error?.message || "技能施放失敗。", "error");
+  } finally {
+    skillBusy = false;
+    await refreshSkillDisplay();
+  }
+}
 async function requestInventoryAction(action, value) {
   if (!character || inventoryBusy) return;
   if (action === "drop" && !window.confirm("確定丟棄 1 個「" + inventoryItemName(value) + "」？")) {
@@ -467,6 +642,21 @@ elements.equipmentSlots.addEventListener("click", event => {
   const button = event.target.closest("button[data-inventory-action='unequip']");
   if (button && !button.disabled) requestInventoryAction("unequip", button.dataset.itemId);
 });
+elements.skillList.addEventListener("click", event => {
+  const button = event.target.closest("button[data-skill-action]");
+  if (button && !button.disabled) {
+    requestSkillAction(button.dataset.skillAction, button.dataset.skillId, Number(button.dataset.slot) || null);
+  }
+});
+elements.skillShortcuts.addEventListener("click", event => {
+  const button = event.target.closest("button[data-cast-shortcut]");
+  if (!button || button.disabled) return;
+  const slot = Number(button.dataset.castShortcut);
+  getSkillBook(database, character.characterId).then(book => {
+    const assigned = book.shortcuts.find(item => item.slot === slot);
+    if (assigned) requestCastSkill(assigned.skillId);
+  }).catch(error => setStatus(error?.message || "無法讀取技能快捷欄。", "error"));
+});
 window.addEventListener("keydown", event => {
   const direction = directionFromKey(event.key);
   if (!direction || event.repeat) return;
@@ -491,6 +681,11 @@ document.querySelectorAll("button[data-feature]").forEach(button => {
     if (feature === "inventory") {
       setStatus("可使用藥水、裝備武器防具，或丟棄不需要的道具。", "success");
       document.querySelector("#inventoryPanel").scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (feature === "skills") {
+      setStatus("學習職業技能、分配快捷欄，並對技能範圍內最近的怪物施放。", "success");
+      document.querySelector("#skillPanel").scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     const names = {
@@ -523,6 +718,7 @@ async function initialize() {
     renderCharacter(character);
     renderMonsterList(monsters);
     renderInventory(await getInventorySave(database, character.characterId));
+    await refreshSkillDisplay();
     elements.layout.hidden = false;
     setStatus("已載入「" + character.name + "」的本機角色存檔。可以探索並攻擊怪物。", "success");
     document.documentElement.dataset.ready = "true";
