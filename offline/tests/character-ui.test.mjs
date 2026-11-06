@@ -92,8 +92,18 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     logPass(onLog, "重新載入頁面後恢復角色及最後選擇");
 
     await page.locator("#enterButton").click();
-    assert.match(await page.locator("#appStatus").textContent(), /遊戲地圖及戰鬥尚未接入/);
-    logPass(onLog, "進入冒險按鈕正確提示目前整合狀態");
+    await page.waitForURL(url => url.pathname.endsWith("/offline/game/index.html"));
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    assert.equal(await page.locator("#characterName").textContent(), "測試魔導師");
+    assert.equal(await page.locator("#characterLevel").textContent(), "Lv.2");
+    assert.match(await page.locator("#hpText").textContent(), /112 \/ 112/);
+    assert.match(await page.locator("#mpText").textContent(), /53 \/ 53/);
+    assert.match(await page.locator("#statGrid").textContent(), /STR 力量 13/);
+    assert.match(await page.locator("#gameStatus").textContent(), /本機角色存檔/);
+    await page.locator("#returnToCharacters").click();
+    await page.waitForURL(url => url.pathname.endsWith("/offline/character/ui/index.html"));
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    logPass(onLog, "進入遊戲主畫面讀取角色狀態，再返回角色選擇");
 
     await page.locator("#characterName").fill("試驗精靈");
     await page.locator("#classId").selectOption("elf");
