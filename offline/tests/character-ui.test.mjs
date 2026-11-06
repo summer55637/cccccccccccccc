@@ -130,11 +130,15 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
     assert.equal(await page.locator("#positionText").textContent(), "10, 6");
     await page.evaluate(() => { Math.random = () => 0.01; });
-    const slimeAttack = page.locator('.monster-card[data-spawn-id="slime-south"] .monster-attack-button');
-    await slimeAttack.waitFor({ state: "visible" });
-    assert.equal(await slimeAttack.isEnabled(), true, "相鄰的史萊姆應可攻擊");
-    await slimeAttack.click();
-    await page.locator("#adventureMessage").filter({ hasText: "擊敗 森林史萊姆" }).waitFor({ timeout: 10000 });
+    const fireboltCard = page.locator('.skill-card[data-skill-id="firebolt"]');
+    await fireboltCard.waitFor({ state: "visible" });
+    await fireboltCard.locator('button[data-skill-action="learn"]').click();
+    await fireboltCard.locator('button[data-skill-action="learn"]').click();
+    await page.locator("#skillPointBadge").filter({ hasText: "技能點數 0" }).waitFor();
+    assert.equal(await fireboltCard.locator(".skill-rank").textContent(), "Lv.2 / 3");
+    await fireboltCard.locator('button[data-skill-action="assign"][data-slot="1"]').click();
+    await page.locator('#skillShortcuts button[data-cast-shortcut="1"]').click();
+    await page.locator("#adventureMessage").filter({ hasText: "擊敗怪物" }).waitFor({ timeout: 10000 });
     const combatSave = await page.evaluate(async ({ name, id }) => {
       const { OfflineCharacterDB } = await import("/offline/storage/indexeddb.js");
       const database = new OfflineCharacterDB({ dbName: name });
