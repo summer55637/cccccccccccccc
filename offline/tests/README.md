@@ -41,6 +41,6 @@ backup-ui.test.mjs 驗證完整 JSON 匯出及還原流程：
 
 ## GitHub Actions
 
-推送到 offline/local-character-system 分支的 offline/** 檔案變更時，GitHub Actions 會安裝 Chromium 並執行 offline/tests/run-browser-tests.mjs。流程會依序執行 IndexedDB、角色管理介面與戰鬥／背包整合、地圖移動、怪物戰鬥、背包與裝備、角色成長及備份／還原測試。
+推送到 offline/local-character-system 分支的 offline/** 檔案變更時，GitHub Actions 會安裝 Chromium 並執行 offline/tests/run-browser-tests.mjs。流程會依序執行 IndexedDB、角色管理介面與戰鬥／背包／技能整合、地圖移動、怪物戰鬥、背包與裝備、職業技能、角色成長及備份／還原測試。
 
 各測試使用獨立的臨時 IndexedDB，結束後自動清除測試資料庫，不會刪除正式存檔，也不會連線原遊戲伺服器。
