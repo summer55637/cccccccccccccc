@@ -44,6 +44,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     await page.locator("#createButton").click();
     const firstCard = page.locator(".character-card").filter({ hasText: "測試勇士" });
     await firstCard.waitFor({ state: "visible" });
+    const characterId = await firstCard.getAttribute("data-character-id");
     assert.match(await firstCard.textContent(), /騎士/);
     assert.match(await firstCard.textContent(), /Lv\.1/);
     assert.equal(await page.locator("#selectedTitle").textContent(), "測試勇士");
@@ -57,7 +58,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
       const database = new OfflineCharacterDB({ dbName: name });
       try { await awardExperience(database, id, 100); }
       finally { database.close(); }
-    }, { name: dbName, id: await firstCard.getAttribute("data-character-id") });
+    }, { name: dbName, id: characterId });
     await page.reload({ waitUntil: "load" });
     await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
     await page.locator(".character-card").filter({ hasText: "測試勇士" }).waitFor({ state: "visible" });
@@ -131,7 +132,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
       } finally {
         database.close();
       }
-    }, { name: dbName, id: await page.locator("#characterName").getAttribute("data-character-id") || await page.evaluate(() => document.querySelector("#characterName")?.dataset.characterId || "") });
+    }, { name: dbName, id: characterId });
     assert.equal(combatSave.experience, 18);
     assert.equal(combatSave.itemId, "slime-gel");
     assert.equal(combatSave.itemCount, 1);
