@@ -47,7 +47,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.match(await firstCard.textContent(), /騎士/);
     assert.match(await firstCard.textContent(), /Lv\.1/);
     assert.equal(await page.locator("#selectedTitle").textContent(), "測試勇士");
-    assert.match(await page.locator("#statDetails").textContent(), /STR 力量 12/);
+    assert.equal((await page.locator("#statDetails").textContent()).includes("STR 力量 12"), true, "角色建立時 STR 必須初始化為 12");
     assert.match(await page.locator("#statDetails").textContent(), /VIT 體質 12/);
     logPass(onLog, "建立角色、初始化職業與自動選擇");
 
@@ -69,7 +69,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
       document.querySelector("#statDetails")?.textContent?.includes("STR 力量 13") &&
       document.querySelector("#statPointsLabel")?.textContent === "可用能力點數：2"
     );
-    assert.match(await page.locator("#statDetails").textContent(), /STR 力量13/);
+    assert.equal((await page.locator("#statDetails").textContent()).includes("STR 力量 13"), true, "分配後 STR 必須更新為 13");
     assert.equal(await page.locator("#statPointsLabel").textContent(), "可用能力點數：2");
     logPass(onLog, "經驗升級、能力點數獲得及分配後重新載入保存");
 
