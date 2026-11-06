@@ -1,5 +1,6 @@
 import { awardExperience } from "../progression/service.js";
 import { getEquipmentBonuses } from "../inventory/items.js";
+import { calculateSkillAttack } from "../skills/rules.js";
 import { getMonsterDefinition, getMonsterSpawns } from "./monsters.js";
 import {
   BASIC_ATTACK_COOLDOWN_MS,
@@ -217,6 +218,133 @@ export async function attackMonster(database, characterId, spawnId, options = {}
     experience: experienceReward,
     levelUps,
     loot: lootName ? { name: lootName, added: lootAdded } : null,
+    counterAttack,
+    character: updatedCharacter,
+  };
+}
+
+/** Cast a learned skill against a monster and persist MP, cooldown and combat state. */
+export async function castSkillOnMonster(database, characterId, spawnId, skill, skillLevel, options = {}) {
+  assertDatabase(database);
+  if (!isRecord(options)) throw new TypeError("技能施放選項格式不正確。");
+  if (!isRecord(skill) ||
+      typeof skill.skillId !== "string" ||
+      !Number.isSafeInteger(skill.mpCost) ||
+      !Number.isSafeInteger(skill.cooldownMs) ||
+      !Number.isSafeInteger(skill.range)) {
+    throw new TypeError("技能資料格式不正確。");
+  }
+  const now = options.now ?? Date.now();
+  const random = options.random ?? Math.random;
+  if (!Number.isSafeInteger(now) || now < 0) throw new RangeError("目前時間格式不正確。");
+
+  const save = await database.loadCharacterSave(characterId);
+  if (!save?.character) throw new Error("找不到要施放技能的角色。");
+  const character = save.character;
+  if (character.hp.current <= 0) throw new Error("角色 HP 為 0，無法施放技能。");
+  if (character.mp.current < skill.mpCost) throw new Error("MP 不足，無法施放此技能。");
+
+  const cooldowns = save.skills.cooldowns || {};
+  const readyAt = cooldowns[skill.skillId] || 0;
+  if (now < readyAt) {
+    const remaining = Math.ceil((readyAt - now) / 1000);
+    throw new Error("技能冷卻中，還需要 " + remaining + " 秒。");
+  }
+
+  const spawns = getMonsterSpawns(character.mapId);
+  const spawn = spawns.find(item => item.spawnId === spawnId);
+  if (!spawn) throw new Error("這張地圖沒有該怪物。");
+  const state = await readCombatState(database, characterId, spawns, now);
+  const monsterState = state.monsters[spawnId];
+  if (monsterState.hp <= 0) throw new Error("這隻怪物正在重生中。");
+  const distance = getManhattanDistance(character.position, spawn.position);
+  if (distance > skill.range) throw new Error("技能距離不足，請靠近目標。");
+
+  const bonuses = getEquipmentBonuses(save.equipment);
+  const attack = calculateSkillAttack(
+    character,
+    skill,
+    skillLevel,
+    bonuses.attackBonus,
+    checkedRandom(random),
+  );
+
+  const skills = {
+    points: save.skills.points ?? 0,
+    learned: save.skills.learned ?? [],
+    shortcuts: save.skills.shortcuts ?? [],
+    cooldowns: { ...cooldowns, [skill.skillId]: now + skill.cooldownMs },
+  };
+  const updatedSave = await database.updateCharacterAndSaveData(
+    characterId,
+    {
+      mp: {
+        current: character.mp.current - skill.mpCost,
+        max: character.mp.max,
+      },
+    },
+    { skills },
+  );
+
+  monsterState.hp = Math.max(0, monsterState.hp - attack.damage);
+  let experienceReward = 0;
+  let loot = null;
+  let levelUps = [];
+  let counterAttack = { hit: false, damage: 0 };
+
+  if (monsterState.hp <= 0) {
+    monsterState.respawnAt = now + spawn.definition.respawnMs;
+    const progress = await awardExperience(database, characterId, spawn.definition.experience);
+    experienceReward = progress.gained;
+    levelUps = progress.levelUps;
+    const drop = spawn.definition.loot;
+    if (drop) {
+      const inventoryResult = await addLootToInventory(database, characterId, drop);
+      loot = { name: drop.name, added: inventoryResult.added };
+    }
+  } else {
+    const ai = getMonsterBrainState(
+      spawn.definition,
+      { ...monsterState, position: spawn.position },
+      character.position,
+    );
+    if (ai.state === "attack") {
+      counterAttack = calculateMonsterAttack(
+        updatedSave.character,
+        spawn.definition,
+        checkedRandom(random),
+        bonuses.defenseBonus,
+      );
+      if (counterAttack.hit) {
+        await database.updateCharacter(characterId, {
+          hp: {
+            current: Math.max(0, updatedSave.character.hp.current - counterAttack.damage),
+            max: updatedSave.character.hp.max,
+          },
+        });
+      }
+    }
+  }
+
+  await database.setSetting(stateKey(characterId), state);
+  const updatedCharacter = await database.getCharacter(characterId);
+  return {
+    skillId: skill.skillId,
+    skillName: skill.name,
+    skillLevel,
+    hit: attack.hit,
+    damage: attack.damage,
+    mpCost: skill.mpCost,
+    cooldownUntil: now + skill.cooldownMs,
+    monster: {
+      ...monsterState,
+      position: { ...spawn.position },
+      state: monsterState.hp <= 0 ? "defeated" : "alive",
+    },
+    defeated: monsterState.hp <= 0,
+    experience: experienceReward,
+    levelUps,
+    loot,
     counterAttack,
     character: updatedCharacter,
   };
