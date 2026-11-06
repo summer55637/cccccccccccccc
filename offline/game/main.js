@@ -3,7 +3,7 @@ import { getExperienceProgress, STAT_KEYS, STAT_LABELS } from "./progression/rul
 import { getMapDefinition, getMapTile } from "./world/map.js";
 import { moveCharacter } from "./world/movement.js";
 import { attackMonster, getMonsterWorldState } from "./combat/service.js";
-import { EQUIPMENT_SLOTS, getItemDefinition } from "./inventory/items.js";
+import { EQUIPMENT_SLOTS, ITEM_DEFINITIONS, getItemDefinition } from "./inventory/items.js";
 import {
   dropItem,
   equipItem,
@@ -236,6 +236,9 @@ function createInventoryAction(label, action, itemId) {
   button.textContent = label;
   return button;
 }
+function inventoryItemName(itemId) {
+  return ITEM_DEFINITIONS[itemId]?.name || itemId;
+}
 function renderInventory(save) {
   if (!save || !elements.inventoryList) return;
   const inventory = save.inventory;
@@ -243,7 +246,11 @@ function renderInventory(save) {
   elements.inventoryCapacity.textContent = inventory.items.length + " / " + inventory.capacity + " 格";
   elements.inventoryItemCount.textContent = inventory.items.length + " 種";
   const cards = inventory.items.map(item => {
-    const definition = getItemDefinition(item.itemId);
+    const definition = ITEM_DEFINITIONS[item.itemId] || {
+      name: item.name || item.itemId,
+      type: "material",
+      description: "此道具來自匯入存檔，尚無使用或裝備資料。",
+    };
     const card = document.createElement("article");
     card.className = "inventory-card";
     card.dataset.itemId = item.itemId;
@@ -284,7 +291,7 @@ function renderInventory(save) {
     slotName.textContent = label;
     const itemId = equipment.slots[slot];
     const itemName = document.createElement("strong");
-    itemName.textContent = itemId ? getItemDefinition(itemId).name : "尚未裝備";
+    itemName.textContent = itemId ? inventoryItemName(itemId) : "尚未裝備";
     row.append(slotName, itemName);
     if (itemId) row.append(createInventoryAction("卸下", "unequip", slot));
     return row;
@@ -303,7 +310,7 @@ async function refreshInventoryDisplay() {
 }
 async function requestInventoryAction(action, value) {
   if (!character || inventoryBusy) return;
-  if (action === "drop" && !window.confirm("確定丟棄 1 個「" + getItemDefinition(value).name + "」？")) {
+  if (action === "drop" && !window.confirm("確定丟棄 1 個「" + inventoryItemName(value) + "」？")) {
     return;
   }
   inventoryBusy = true;
@@ -315,7 +322,7 @@ async function requestInventoryAction(action, value) {
         result.restored + (result.gauge === "hp" ? " HP。" : " MP。");
     } else if (action === "drop") {
       await dropItem(database, character.characterId, value, 1);
-      message = "已丟棄 1 個「" + getItemDefinition(value).name + "」。";
+      message = "已丟棄 1 個「" + inventoryItemName(value) + "」。";
     } else if (action === "equip") {
       await equipItem(database, character.characterId, value);
       message = "已裝備「" + getItemDefinition(value).name + "」。";
