@@ -31,20 +31,39 @@ export async function createProgressionCharacter(database, input) {
 
 export async function awardExperience(database, characterId, amount) {
   if (!(database instanceof OfflineCharacterDB)) throw new TypeError("請提供 OfflineCharacterDB 資料庫。");
-  const character = await database.getCharacter(characterId);
-  if (!character) throw new Error("找不到要增加經驗值的角色。");
+  const save = await database.loadCharacterSave(characterId);
+  if (!save?.character) throw new Error("找不到要增加經驗值的角色。");
+  const character = save.character;
   const result = calculateExperienceGain(character, amount);
-  const updated = await database.updateCharacter(characterId, {
+  const patch = {
     experience: result.experience,
     level: result.level,
     statPoints: result.statPoints,
     hp: result.hp,
     mp: result.mp,
-  });
+  };
+  let updated;
+  if (result.levelUps.length > 0) {
+    const skills = {
+      points: save.skills.points ?? 0,
+      learned: save.skills.learned ?? [],
+      shortcuts: save.skills.shortcuts ?? [],
+      cooldowns: save.skills.cooldowns ?? {},
+    };
+    const updatedSave = await database.updateCharacterAndSaveData(
+      characterId,
+      patch,
+      { skills: { ...skills, points: skills.points + result.levelUps.length } },
+    );
+    updated = updatedSave.character;
+  } else {
+    updated = await database.updateCharacter(characterId, patch);
+  }
   return {
     character: updated,
     gained: result.gained,
     levelUps: result.levelUps,
+    skillPointsGained: result.levelUps.length,
     reachedLevelCap: result.reachedLevelCap,
   };
 }
