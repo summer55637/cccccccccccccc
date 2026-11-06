@@ -54,7 +54,12 @@ export async function runBackupUITests({ browser, baseUrl, onLog = () => {} }) {
       await database.saveCharacterData(id, {
         inventory: { capacity: 80, items: [{ itemId: "red-potion", count: 12 }] },
         equipment: { slots: { weapon: "iron-sword" } },
-        skills: { learned: [{ skillId: "power-strike", level: 3 }] },
+        skills: {
+          points: 2,
+          learned: [{ skillId: "power-strike", level: 3 }],
+          shortcuts: [{ slot: 1, skillId: "power-strike" }],
+          cooldowns: { "power-strike": 123456789 },
+        },
         quests: { entries: [{ questId: "first-journey", status: "done" }] },
       });
       await database.setSetting("selectedCharacterId", id);
@@ -84,6 +89,9 @@ export async function runBackupUITests({ browser, baseUrl, onLog = () => {} }) {
     assert.equal(backup.data.inventories[0].items[0].count, 12);
     assert.equal(backup.data.equipment[0].slots.weapon, "iron-sword");
     assert.equal(backup.data.skills[0].learned[0].level, 3);
+    assert.equal(backup.data.skills[0].points, 2);
+    assert.deepEqual(backup.data.skills[0].shortcuts, [{ slot: 1, skillId: "power-strike" }]);
+    assert.equal(backup.data.skills[0].cooldowns["power-strike"], 123456789);
     assert.equal(backup.data.quests[0].entries[0].status, "done");
     assert.equal(backup.data.settings.find(item => item.key === "selectedCharacterId").value, characterId);
     assert.deepEqual(backup.data.settings.find(item => item.key === "backupPreference").value, {
@@ -132,6 +140,9 @@ export async function runBackupUITests({ browser, baseUrl, onLog = () => {} }) {
           count: save.inventory.items[0].count,
           weapon: save.equipment.slots.weapon,
           skillLevel: save.skills.learned[0].level,
+          skillPoints: save.skills.points,
+          shortcut: save.skills.shortcuts[0],
+          cooldown: save.skills.cooldowns["power-strike"],
           questStatus: save.quests.entries[0].status,
           preference: await database.getSetting("backupPreference", null),
         };
@@ -143,6 +154,9 @@ export async function runBackupUITests({ browser, baseUrl, onLog = () => {} }) {
       count: 12,
       weapon: "iron-sword",
       skillLevel: 3,
+      skillPoints: 2,
+      shortcut: { slot: 1, skillId: "power-strike" },
+      cooldown: 123456789,
       questStatus: "done",
       preference: { theme: "night", compact: true },
     });
