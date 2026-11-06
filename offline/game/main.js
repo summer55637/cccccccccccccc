@@ -2,6 +2,7 @@ import { OfflineCharacterDB } from "../storage/indexeddb.js";
 import { getExperienceProgress, STAT_KEYS, STAT_LABELS } from "./progression/rules.js";
 import { getMapDefinition, getMapTile } from "./world/map.js";
 import { moveCharacter } from "./world/movement.js";
+import { attackMonster, getMonsterWorldState } from "./combat/service.js";
 
 const CLASS_INFO = Object.freeze({
   knight: { label: "騎士", emblem: "⚔" },
@@ -41,10 +42,14 @@ const elements = {
   position: document.querySelector("#positionText"),
   mapId: document.querySelector("#mapIdText"),
   movementControls: document.querySelector("#movementControls"),
+  monsterList: document.querySelector("#monsterList"),
+  combatSummary: document.querySelector("#combatSummary"),
 };
 let character = null;
 let moving = false;
 let playerMarker = null;
+let monsters = [];
+let attacking = false;
 
 function setStatus(message, kind = "info") {
   elements.status.textContent = message;
@@ -92,7 +97,23 @@ function createPlayerMarker() {
   elements.worldName = name;
   return marker;
 }
-function renderMap(currentCharacter) {
+function createMonsterMarker(monster) {
+  const marker = document.createElement("div");
+  marker.className = "monster-marker";
+  marker.dataset.spawnId = monster.spawnId;
+  marker.style.gridColumnStart = String(monster.position.x + 1);
+  marker.style.gridRowStart = String(monster.position.y + 1);
+  marker.setAttribute("aria-label", monster.name + "，Lv." + monster.level);
+  const icon = document.createElement("span");
+  icon.className = "monster-icon";
+  icon.textContent = monster.icon;
+  const name = document.createElement("span");
+  name.className = "monster-name";
+  name.textContent = monster.name;
+  marker.append(icon, name);
+  return marker;
+}
+function renderMap(currentCharacter, currentMonsters = monsters) {
   const map = getMapDefinition(currentCharacter.mapId);
   elements.mapGrid.style.gridTemplateColumns = "repeat(" + map.width + ", minmax(0, 1fr))";
   elements.mapGrid.style.gridTemplateRows = "repeat(" + map.height + ", minmax(0, 1fr))";
@@ -109,8 +130,11 @@ function renderMap(currentCharacter) {
       tiles.push(element);
     }
   }
+  const monsterMarkers = currentMonsters
+    .filter(monster => monster.hp > 0)
+    .map(createMonsterMarker);
   playerMarker = createPlayerMarker();
-  elements.mapGrid.replaceChildren(...tiles, playerMarker);
+  elements.mapGrid.replaceChildren(...tiles, ...monsterMarkers, playerMarker);
   elements.mapId.textContent = map.name + " (" + map.id + ")";
   renderPosition(currentCharacter.position);
 }
@@ -121,6 +145,75 @@ function renderPosition(position) {
   playerMarker.setAttribute("aria-label", "角色位於 " + position.x + ", " + position.y);
   elements.position.textContent = position.x + ", " + position.y;
 }
+function renderMonsterList(currentMonsters = monsters) {
+  if (!elements.monsterList || !elements.combatSummary) return;
+  const alive = currentMonsters.filter(monster => monster.hp > 0);
+  const defeated = currentMonsters.length - alive.length;
+  elements.combatSummary.textContent = alive.length
+    ? "移動到怪物旁邊（上下左右一格）即可攻擊；怪物靠近時會反擊。"
+    : "附近怪物目前都已倒下，稍後會在原地重生。";
+  const cards = currentMonsters.map(monster => {
+    const card = document.createElement("article");
+    card.className = "monster-card";
+    card.dataset.spawnId = monster.spawnId;
+
+    const heading = document.createElement("div");
+    heading.className = "monster-card-heading";
+    const title = document.createElement("strong");
+    title.textContent = monster.name + " · Lv." + monster.level;
+    const state = document.createElement("span");
+    state.className = "monster-state state-" + monster.state;
+    state.textContent = monster.hp <= 0
+      ? "重生中"
+      : monster.stateLabel;
+    heading.append(title, state);
+
+    const health = document.createElement("div");
+    health.className = "monster-health";
+    const healthLabel = document.createElement("span");
+    healthLabel.textContent = monster.hp <= 0
+      ? "等待重生 " + Math.ceil(monster.respawnRemainingMs / 1000) + " 秒"
+      : "HP " + formatNumber(monster.hp) + " / " + formatNumber(monster.maxHp);
+    const track = document.createElement("div");
+    track.className = "monster-meter";
+    const fill = document.createElement("span");
+    fill.style.width = percentage(monster.hp, monster.maxHp) + "%";
+    track.append(fill);
+    health.append(healthLabel, track);
+
+    const distance = document.createElement("p");
+    distance.className = "monster-distance";
+    distance.textContent = monster.hp <= 0
+      ? "此處暫無怪物"
+      : monster.distance === 0
+        ? "怪物就在目前位置"
+        : "距離 " + monster.distance + " 格";
+
+    const attackButton = document.createElement("button");
+    attackButton.type = "button";
+    attackButton.className = "monster-attack-button";
+    attackButton.dataset.attack = monster.spawnId;
+    attackButton.disabled = monster.hp <= 0 || monster.distance > 1 || attacking;
+    attackButton.textContent = monster.hp <= 0
+      ? "重生中"
+      : monster.distance > 1
+        ? "靠近後攻擊"
+        : "普通攻擊";
+    card.append(heading, health, distance, attackButton);
+    return card;
+  });
+  elements.monsterList.replaceChildren(...cards);
+  if (defeated > 0 && alive.length > 0) {
+    elements.combatSummary.textContent += " 另有 " + defeated + " 隻怪物正在重生。";
+  }
+}
+async function refreshCombatDisplay() {
+  if (!character) return;
+  monsters = await getMonsterWorldState(database, character.characterId);
+  renderMap(character, monsters);
+  renderMonsterList(monsters);
+}
+
 function renderCharacter(currentCharacter) {
   const classInfo = CLASS_INFO[currentCharacter.classId] || {
     label: currentCharacter.classId,
@@ -142,20 +235,23 @@ function renderCharacter(currentCharacter) {
   elements.experienceFill.style.width = experience.percent + "%";
   elements.statPoints.textContent = (currentCharacter.statPoints ?? 0) + " 點";
   elements.statGrid.replaceChildren(...STAT_KEYS.map(key => makeStat(key, currentCharacter.stats[key])));
-  renderMap(currentCharacter);
+  renderMap(currentCharacter, monsters);
 }
 async function requestMove(direction) {
   if (!character || moving) return;
   moving = true;
   try {
-    const result = await moveCharacter(database, character.characterId, direction);
+    const blockedPositions = monsters
+      .filter(monster => monster.hp > 0)
+      .map(monster => monster.position);
+    const result = await moveCharacter(database, character.characterId, direction, blockedPositions);
     if (!result.moved) {
       setStatus(result.reason, "info");
       document.querySelector("#adventureMessage").textContent = result.reason;
       return;
     }
     character = result.character;
-    renderPosition(character.position);
+    await refreshCombatDisplay();
     setStatus("已移動至座標 " + character.position.x + ", " + character.position.y + "；位置已自動保存。", "success");
     document.querySelector("#adventureMessage").textContent =
       "你目前位於新手村的 " + character.position.x + ", " + character.position.y + "。";
@@ -163,6 +259,42 @@ async function requestMove(direction) {
     setStatus(error?.message || "移動失敗，角色位置沒有變更。", "error");
   } finally {
     moving = false;
+  }
+}
+async function requestAttack(spawnId) {
+  if (!character || attacking) return;
+  attacking = true;
+  renderMonsterList(monsters);
+  try {
+    const target = monsters.find(monster => monster.spawnId === spawnId);
+    if (!target) throw new Error("找不到附近怪物。");
+    const result = await attackMonster(database, character.characterId, spawnId);
+    character = result.character;
+    await refreshCombatDisplay();
+    renderCharacter(character);
+    renderMonsterList(monsters);
+
+    let message;
+    if (result.defeated) {
+      message = "擊敗 " + target.name + "！獲得 " + formatNumber(result.experience) + " EXP。";
+      if (result.loot?.added) message += " 取得「" + result.loot.name + "」。";
+      else if (result.loot) message += " 背包空間不足，未能拾取「" + result.loot.name + "」。";
+      if (result.levelUps.length) message += " 升級至 Lv." + character.level + "！";
+    } else if (!result.hit) {
+      message = "攻擊落空！";
+    } else {
+      message = "你對 " + target.name + " 造成 " + result.damage + " 點傷害。";
+    }
+    if (result.counterAttack.hit) {
+      message += " 怪物反擊，造成 " + result.counterAttack.damage + " 點傷害。";
+    }
+    document.querySelector("#adventureMessage").textContent = message;
+    setStatus(message, result.defeated ? "success" : "info");
+  } catch (error) {
+    setStatus(error?.message || "攻擊失敗。", "error");
+  } finally {
+    attacking = false;
+    renderMonsterList(monsters);
   }
 }
 function directionFromKey(key) {
@@ -190,6 +322,10 @@ elements.movementControls.addEventListener("click", event => {
   const button = event.target.closest("button[data-move]");
   if (button) requestMove(button.dataset.move);
 });
+elements.monsterList.addEventListener("click", event => {
+  const button = event.target.closest("button[data-attack]");
+  if (button && !button.disabled) requestAttack(button.dataset.attack);
+});
 window.addEventListener("keydown", event => {
   const direction = directionFromKey(event.key);
   if (!direction || event.repeat) return;
@@ -204,6 +340,11 @@ document.querySelectorAll("button[data-feature]").forEach(button => {
     if (feature === "map") {
       setStatus("使用鍵盤方向鍵／W A S D，或點選畫面下方方向按鈕移動。", "success");
       elements.movementControls.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (feature === "combat") {
+      setStatus("靠近怪物後可使用普通攻擊；怪物會依距離進入待機、警戒或攻擊狀態。", "success");
+      document.querySelector("#combatPanel").scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     const names = {
@@ -232,9 +373,11 @@ async function initialize() {
       return;
     }
     character = save.character;
+    monsters = await getMonsterWorldState(database, character.characterId);
     renderCharacter(character);
+    renderMonsterList(monsters);
     elements.layout.hidden = false;
-    setStatus("已載入「" + character.name + "」的本機角色存檔。可以開始移動。", "success");
+    setStatus("已載入「" + character.name + "」的本機角色存檔。可以探索並攻擊怪物。", "success");
     document.documentElement.dataset.ready = "true";
   } catch (error) {
     setStatus(error?.message || "無法讀取本機角色資料。請使用 localhost 或 HTTPS。", "error");
