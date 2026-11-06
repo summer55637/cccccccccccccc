@@ -4,22 +4,17 @@
 
 開啟 indexeddb-test.html 並按「執行完整測試」。測試使用一次性的臨時資料庫，完成後自動刪除。
 
-目前測試項目：
-
-- 建立 IndexedDB 及資料表。
-- 建立角色並初始化背包、裝備、技能及任務資料。
-- 依角色 ID 讀取角色。
-- 阻止重複角色名稱。
-- 阻止修改角色識別碼。
-- 更新角色等級、經驗、能力值及座標。
-- 保存及讀取背包、裝備、技能及任務。
-- 列出角色。
-- 關閉資料庫後重新開啟，確認存檔持續存在。
-- 刪除角色及其附屬資料。
-
 ## 角色管理介面測試
 
-character-ui.test.mjs 透過 Playwright 操作真正的瀏覽器畫面，測試建立、編輯、選擇、重新載入及刪除角色，並檢查畫面不會呼叫外部服務。
+character-ui.test.mjs 透過 Playwright 操作真正的瀏覽器畫面，測試建立、編輯、選擇、升級、能力點數分配、進入主畫面、鍵盤／觸控移動、碰撞阻擋、重新載入後位置保存及刪除角色。
+
+## 角色成長測試
+
+progression-test.html 及 progression.test.mjs 驗證職業初始能力值、經驗進度、跨級及溢出經驗、能力點數、錯誤輸入、職業 HP／MP 差異、等級上限與重新開啟資料庫後資料持續存在。
+
+## 地圖與移動測試
+
+world-test.html 及 world.test.mjs 驗證新手村地圖尺寸、出生點、樹木／岩石／水域碰撞、單格移動、地圖邊界、無效方向及 IndexedDB 座標保存。
 
 ## 存檔備份測試
 
@@ -34,6 +29,6 @@ backup-ui.test.mjs 驗證完整 JSON 匯出及還原流程：
 
 ## GitHub Actions
 
-推送到 offline/local-character-system 分支的 offline/** 檔案變更時，GitHub Actions 會安裝 Chromium 並執行 offline/tests/run-browser-tests.mjs。這個流程會依序執行 IndexedDB、角色管理介面及備份／還原測試。
+推送到 offline/local-character-system 分支的 offline/** 檔案變更時，GitHub Actions 會安裝 Chromium 並執行 offline/tests/run-browser-tests.mjs。流程會依序執行 IndexedDB、角色管理介面、地圖移動、角色成長及備份／還原測試。
 
-測試只使用獨立的臨時資料庫及自建假資料；測試結束會清除臨時資料，不會刪除正式存檔，也不會連線原遊戲伺服器。
+各測試使用獨立的臨時 IndexedDB，結束後自動清除測試資料庫，不會刪除正式存檔，也不會連線原遊戲伺服器。
