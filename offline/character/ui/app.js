@@ -291,7 +291,7 @@ elements.createForm.addEventListener("submit", async event => {
   if (isBusy || isBackupBusy) return;
   setBusy(true);
   try {
-    const character = await db.createCharacter({
+    const character = await createProgressionCharacter(db, {
       name: elements.name.value,
       classId: elements.classId.value,
     });
