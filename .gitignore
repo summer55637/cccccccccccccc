@@ -1,0 +1,26 @@
+# Local account/session data — never commit
+/local_accounts.json
+/local_accounts.*.json
+/accounts.local.json
+/tokens.local.json
+
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+/secrets/
+**/secrets/
+**/*credentials*.json
+**/*tokens*.json
+**/*passwords*.json
+
+# Local databases and runtime state
+*.sqlite
+*.sqlite3
+*.db
+*.log
+
+# Dependencies and generated output
+node_modules/
+dist/
+build/
