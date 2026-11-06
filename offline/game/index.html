@@ -115,6 +115,16 @@
             <div id="inventoryList" class="inventory-list" aria-live="polite"></div>
           </section>
 
+          <section id="skillPanel" class="game-panel skill-panel">
+            <div class="panel-heading">
+              <div><p class="section-kicker">SKILL BOOK</p><h3>職業技能</h3></div>
+              <span id="skillPointBadge" class="combat-badge">技能點數 0</span>
+            </div>
+            <p class="skill-summary">升級取得技能點數，學習或升級職業技能；可放入快捷欄施放。</p>
+            <div id="skillShortcuts" class="skill-shortcuts" aria-label="技能快捷欄"></div>
+            <div id="skillList" class="skill-list" aria-live="polite"></div>
+          </section>
+
           <section class="game-panel world-info">
             <div>
               <p class="section-kicker">ADVENTURE LOG</p>
@@ -127,7 +137,7 @@
           <nav class="action-dock" aria-label="遊戲快捷功能">
             <button type="button" data-feature="combat"><span>⚔</span><strong>戰鬥</strong><small>已開放</small></button>
             <button type="button" data-feature="inventory"><span>▣</span><strong>背包</strong><small>已開放</small></button>
-            <button type="button" data-feature="skills"><span>✧</span><strong>技能</strong><small>第 6 階段</small></button>
+            <button type="button" data-feature="skills"><span>✧</span><strong>技能</strong><small>已開放</small></button>
             <button type="button" data-feature="quests"><span>◇</span><strong>任務</strong><small>後續開發</small></button>
           </nav>
         </section>
@@ -139,7 +149,7 @@
             <button type="button" class="feature-row" data-feature="map"><span>🗺️</span><span><strong>世界地圖</strong><small>第 3 階段開放</small></span><b>›</b></button>
             <button type="button" class="feature-row" data-feature="combat"><span>⚔️</span><span><strong>戰鬥</strong><small>普通攻擊及怪物獎勵</small></span><b>›</b></button>
             <button type="button" class="feature-row" data-feature="inventory"><span>🎒</span><span><strong>背包與裝備</strong><small>藥水、裝備及材料</small></span><b>›</b></button>
-            <button type="button" class="feature-row" data-feature="skills"><span>✨</span><span><strong>技能</strong><small>第 6 階段開放</small></span><b>›</b></button>
+            <button type="button" class="feature-row" data-feature="skills"><span>✨</span><span><strong>技能</strong><small>學習、升級與施放技能</small></span><b>›</b></button>
             <button type="button" class="feature-row" data-feature="quests"><span>📜</span><span><strong>任務</strong><small>後續開發</small></span><b>›</b></button>
           </section>
 
@@ -151,7 +161,7 @@
           </section>
         </aside>
       </div>
-      <footer class="game-footer"><span>單機原型 · 自製示意介面</span><span>地圖移動與基本戰鬥已可遊玩；背包與裝備已開放；技能持續開發</span></footer>
+      <footer class="game-footer"><span>單機原型 · 自製示意介面</span><span>地圖移動與基本戰鬥已可遊玩；背包、裝備及職業技能已開放</span></footer>
     </main>
   </div>
 </body>
