@@ -1,4 +1,6 @@
 import { OfflineCharacterDB } from "../../storage/indexeddb.js";
+import { createProgressionCharacter, allocateStatPoints } from "../../game/progression/service.js";
+import { getExperienceProgress, STAT_KEYS, STAT_LABELS } from "../../game/progression/rules.js";
 import {
   exportCharacterBackup,
   importCharacterBackup,
@@ -28,6 +30,11 @@ const elements = {
   selected: document.querySelector("#selectedPanel"),
   selectedTitle: document.querySelector("#selectedTitle"),
   selectedDetails: document.querySelector("#selectedDetails"),
+  statDetails: document.querySelector("#statDetails"),
+  experienceText: document.querySelector("#experienceText"),
+  experienceFill: document.querySelector("#experienceFill"),
+  statPointsLabel: document.querySelector("#statPointsLabel"),
+  statAllocation: document.querySelector("#statAllocation"),
   enter: document.querySelector("#enterButton"),
   editPanel: document.querySelector("#editPanel"),
   editForm: document.querySelector("#editForm"),
@@ -91,6 +98,8 @@ function renderSelected() {
   if (!character) return;
   const classInfo = getClassInfo(character.classId);
   elements.selectedTitle.textContent = character.name;
+  const progress = getExperienceProgress(character);
+  const points = character.statPoints ?? 0;
   elements.selectedDetails.replaceChildren(
     makeChip(classInfo.label),
     makeChip("等級 Lv." + character.level),
@@ -98,6 +107,23 @@ function renderSelected() {
     makeChip("MP " + character.mp.current + "/" + character.mp.max),
     makeChip("金幣 " + character.gold),
   );
+  elements.experienceText.textContent = progress.isMaxLevel
+    ? "已達最高等級"
+    : progress.current + " / " + progress.required;
+  elements.experienceFill.style.width = progress.percent + "%";
+  elements.statDetails.replaceChildren(...STAT_KEYS.map(key =>
+    makeChip(STAT_LABELS[key] + " " + character.stats[key])
+  ));
+  elements.statPointsLabel.textContent = "可用能力點數：" + points;
+  elements.statAllocation.replaceChildren();
+  if (points > 0) {
+    for (const key of STAT_KEYS) {
+      const button = createElement("button", "small-button stat-add-button", STAT_LABELS[key] + " +1");
+      button.type = "button";
+      button.dataset.stat = key;
+      elements.statAllocation.append(button);
+    }
+  }
 }
 function renderCharacters() {
   elements.count.textContent = characters.length + " 位";
@@ -283,6 +309,21 @@ elements.createForm.addEventListener("submit", async event => {
 });
 
 elements.list.addEventListener("click", handleCardAction);
+
+elements.statAllocation.addEventListener("click", async event => {
+  const button = event.target.closest("button[data-stat]");
+  if (!button || !selectedCharacterId) return;
+  button.disabled = true;
+  try {
+    const updated = await allocateStatPoints(db, selectedCharacterId, button.dataset.stat, 1);
+    await refreshCharacters();
+    setStatus("已將 1 點能力點數分配至 " + STAT_LABELS[button.dataset.stat] + "。", "success");
+  } catch (error) {
+    setStatus(error?.message || "能力點數分配失敗。", "error");
+  } finally {
+    button.disabled = false;
+  }
+});
 
 elements.editForm.addEventListener("submit", async event => {
   event.preventDefault();
