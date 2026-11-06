@@ -64,8 +64,10 @@ export const EQUIPMENT_SLOTS = Object.freeze([
 ]);
 
 export function getItemDefinition(itemId) {
+  if (typeof itemId !== "string" || !Object.hasOwn(ITEM_DEFINITIONS, itemId)) {
+    throw new Error("未知道具：" + String(itemId));
+  }
   const definition = ITEM_DEFINITIONS[itemId];
-  if (!definition) throw new Error("未知道具：" + String(itemId));
   return definition;
 }
 
