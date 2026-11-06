@@ -146,6 +146,10 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
         const save = await database.loadCharacterSave(id);
         return {
           experience: save.character.experience,
+          mp: save.character.mp.current,
+          learned: save.skills.learned.find(item => item.skillId === "firebolt")?.level,
+          shortcut: save.skills.shortcuts.find(item => item.slot === 1)?.skillId,
+          cooldown: save.skills.cooldowns.firebolt,
           itemId: save.inventory.items.find(item => item.itemId === "slime-gel")?.itemId,
           itemCount: save.inventory.items.find(item => item.itemId === "slime-gel")?.count,
         };
@@ -154,12 +158,16 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
       }
     }, { name: dbName, id: characterId });
     assert.equal(combatSave.experience, 18);
+    assert.equal(combatSave.mp, 41);
+    assert.equal(combatSave.learned, 2);
+    assert.equal(combatSave.shortcut, "firebolt");
+    assert.ok(combatSave.cooldown > Date.now());
     assert.equal(combatSave.itemId, "slime-gel");
     assert.equal(combatSave.itemCount, 1);
     await page.reload({ waitUntil: "load" });
     await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
     assert.equal(await page.locator("#monsterList .monster-card[data-spawn-id=\"slime-south\"] .monster-state").textContent(), "重生中");
-    logPass(onLog, "普通攻擊、擊敗怪物、獲得經驗／掉落及重載後狀態保存");
+    logPass(onLog, "學習／升級職業技能、快捷欄施放、MP 消耗、經驗／掉落及冷卻保存");
 
     await page.evaluate(async ({ name, id }) => {
       const { OfflineCharacterDB } = await import("/offline/storage/indexeddb.js");
