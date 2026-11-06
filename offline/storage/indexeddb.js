@@ -9,7 +9,7 @@ const STORES = Object.freeze({
   settings: "settings",
 });
 const CHARACTER_FIELDS = new Set([
-  "name", "classId", "level", "jobLevel", "experience", "stats",
+  "name", "classId", "level", "jobLevel", "experience", "statPoints", "stats",
   "hp", "mp", "mapId", "position", "gold", "playTimeSeconds",
 ]);
 const SAVE_PARTS = new Set(["inventory", "equipment", "skills", "quests"]);
@@ -88,7 +88,7 @@ function makeCharacter(input) {
   const now = new Date().toISOString();
   return {
     schemaVersion: 1, characterId: createId(), name, nameKey: name.toLocaleLowerCase(),
-    classId, level: 1, jobLevel: 1, experience: 0,
+    classId, level: 1, jobLevel: 1, experience: 0, statPoints: 0,
     stats: { str: 1, dex: 1, int: 1, agi: 1, vit: 1, luk: 1 },
     hp: { current: 100, max: 100 }, mp: { current: 50, max: 50 },
     mapId: "start", position: { x: 0, y: 0 }, gold: 0, playTimeSeconds: 0,
@@ -112,6 +112,7 @@ function patchCharacter(current, patch) {
   for (const key of ["level", "jobLevel"]) {
     if (Object.hasOwn(patch, key)) next[key] = integer(patch[key], key, 1, 100_000);
   }
+  if (Object.hasOwn(patch, "statPoints")) next.statPoints = integer(patch.statPoints, "statPoints", 0, 9999);
   for (const key of ["experience", "gold", "playTimeSeconds"]) {
     if (Object.hasOwn(patch, key)) next[key] = integer(patch[key], key);
   }
