@@ -48,6 +48,22 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.match(await firstCard.textContent(), /騎士/);
     assert.match(await firstCard.textContent(), /Lv\.1/);
     assert.equal(await page.locator("#selectedTitle").textContent(), "測試勇士");
+    const starterKit = await page.evaluate(async ({ name, id }) => {
+      const { OfflineCharacterDB } = await import("/offline/storage/indexeddb.js");
+      const database = new OfflineCharacterDB({ dbName: name });
+      try {
+        const save = await database.loadCharacterSave(id);
+        return save.inventory.items.map(item => ({ itemId: item.itemId, count: item.count }));
+      } finally {
+        database.close();
+      }
+    }, { name: dbName, id: characterId });
+    assert.deepEqual(starterKit, [
+      { itemId: "red-potion", count: 2 },
+      { itemId: "blue-potion", count: 1 },
+      { itemId: "iron-sword", count: 1 },
+      { itemId: "leather-armor", count: 1 },
+    ]);
     assert.equal((await page.locator("#statDetails").textContent()).includes("STR 力量 12"), true, "角色建立時 STR 必須初始化為 12");
     assert.match(await page.locator("#statDetails").textContent(), /VIT 體質 12/);
     logPass(onLog, "建立角色、初始化職業與自動選擇");
@@ -126,8 +142,8 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
         const save = await database.loadCharacterSave(id);
         return {
           experience: save.character.experience,
-          itemId: save.inventory.items[0]?.itemId,
-          itemCount: save.inventory.items[0]?.count,
+          itemId: save.inventory.items.find(item => item.itemId === "slime-gel")?.itemId,
+          itemCount: save.inventory.items.find(item => item.itemId === "slime-gel")?.count,
         };
       } finally {
         database.close();
@@ -152,9 +168,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
           mp: { current: 5, max: character.mp.max },
         });
         await grantItem(database, id, "red-potion", 2);
-        await grantItem(database, id, "blue-potion", 1);
-        await grantItem(database, id, "iron-sword", 1);
-        await grantItem(database, id, "leather-armor", 1);
+
       } finally {
         database.close();
       }
@@ -167,7 +181,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     await redPotionCard.locator('button[data-inventory-action="use"]').click();
     await page.locator("#adventureMessage").filter({ hasText: "恢復 30 HP" }).waitFor();
     assert.match(await page.locator("#hpText").textContent(), /60 \/ 112/);
-    assert.equal(await redPotionCard.locator(".item-count").textContent(), "×1");
+    assert.equal(await redPotionCard.locator(".item-count").textContent(), "×3");
 
     const bluePotionCard = page.locator('.inventory-card[data-item-id="blue-potion"]');
     await bluePotionCard.locator('button[data-inventory-action="use"]').click();
