@@ -24,6 +24,10 @@ combat-test.html 及 combat.test.mjs 使用臨時 IndexedDB 驗證怪物資料�
 
 inventory-test.html 及 inventory.test.mjs 使用臨時 IndexedDB 驗證道具堆疊、紅／藍藥水、滿 HP 防止浪費、角色狀態與背包原子更新、丟棄、裝備更換及卸下、攻防加成、背包容量、未知道具拒絕及重開資料庫後持續保存。角色 UI 整合測試另會直接操作藥水、裝備及丟棄按鈕。
 
+## 職業技能測試
+
+skills-test.html 及 skills.test.mjs 使用臨時 IndexedDB 驗證新角色起始技能點、跨職業與等級限制、學習／升級成本、前置技能條件、四格快捷欄、MP 不足、技能射程、命中／落空、冷卻、怪物反擊、經驗及掉落、重新開啟資料庫後的技能狀態保存。角色 UI 整合測試會實際學習並提升技能、指派快捷欄及施放技能擊敗怪物。備份 UI 測試也會檢查技能點、快捷欄及冷卻的匯出／還原。
+
 ## 存檔備份測試
 
 backup-ui.test.mjs 驗證完整 JSON 匯出及還原流程：
