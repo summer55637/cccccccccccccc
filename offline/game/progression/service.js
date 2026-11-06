@@ -5,16 +5,24 @@ import {
   getClassBaseStats,
 } from "./rules.js";
 import { getMapSpawn } from "../world/map.js";
+import { STARTER_ITEMS } from "../inventory/items.js";
 
 export async function createProgressionCharacter(database, input) {
   if (!(database instanceof OfflineCharacterDB)) throw new TypeError("請提供 OfflineCharacterDB 資料庫。");
   const character = await database.createCharacter(input);
   try {
-    return await database.updateCharacter(character.characterId, {
+    await database.updateCharacter(character.characterId, {
       stats: getClassBaseStats(character.classId),
       statPoints: 0,
       position: getMapSpawn(character.mapId),
     });
+    const save = await database.saveCharacterData(character.characterId, {
+      inventory: {
+        capacity: 100,
+        items: STARTER_ITEMS.map(item => ({ ...item })),
+      },
+    });
+    return save.character;
   } catch (error) {
     await database.deleteCharacter(character.characterId);
     throw error;
