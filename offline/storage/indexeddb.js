@@ -159,8 +159,47 @@ function normalizePart(part, characterId, value) {
     return { characterId, slots: data.slots ?? {} };
   }
   if (part === "skills") {
-    if (data.learned !== undefined && !Array.isArray(data.learned)) throw new TypeError("skills.learned 必須是陣列。");
-    return { characterId, learned: data.learned ?? [] };
+    const points = integer(data.points ?? 0, "技能點數", 0, 9999);
+    const learned = data.learned ?? [];
+    if (!Array.isArray(learned) || learned.length > 200) {
+      throw new TypeError("skills.learned 必須是合理大小的陣列。");
+    }
+    const learnedIds = new Set();
+    const normalizedLearned = learned.map((entry, index) => {
+      if (!isObject(entry)) throw new TypeError(`第 ${index + 1} 個技能紀錄必須是物件。`);
+      const skillId = textValue(entry.skillId, "技能 ID", 128);
+      if (learnedIds.has(skillId)) throw new Error("技能不可重複學習。");
+      learnedIds.add(skillId);
+      return { skillId, level: integer(entry.level, "技能等級", 1, 10) };
+    });
+    const shortcuts = data.shortcuts ?? [];
+    if (!Array.isArray(shortcuts) || shortcuts.length > 4) {
+      throw new TypeError("skills.shortcuts 最多只能有 4 個快捷欄位。");
+    }
+    const shortcutSlots = new Set();
+    const normalizedShortcuts = shortcuts.map((entry, index) => {
+      if (!isObject(entry)) throw new TypeError(`第 ${index + 1} 個技能快捷欄必須是物件。`);
+      const slot = integer(entry.slot, "技能快捷欄位", 1, 4);
+      const skillId = textValue(entry.skillId, "快捷技能 ID", 128);
+      if (shortcutSlots.has(slot)) throw new Error("技能快捷欄位不可重複。");
+      shortcutSlots.add(slot);
+      if (!learnedIds.has(skillId)) throw new Error("快捷欄只能放入已學習技能。");
+      return { slot, skillId };
+    });
+    const cooldowns = data.cooldowns ?? {};
+    if (!isObject(cooldowns)) throw new TypeError("skills.cooldowns 必須是物件。");
+    const normalizedCooldowns = {};
+    for (const [skillId, expiresAt] of Object.entries(cooldowns)) {
+      normalizedCooldowns[textValue(skillId, "冷卻技能 ID", 128)] =
+        integer(expiresAt, "技能冷卻時間", 0);
+    }
+    return {
+      characterId,
+      points,
+      learned: normalizedLearned,
+      shortcuts: normalizedShortcuts,
+      cooldowns: normalizedCooldowns,
+    };
   }
   if (part === "quests") {
     if (data.entries !== undefined && !Array.isArray(data.entries)) throw new TypeError("quests.entries 必須是陣列。");
@@ -241,7 +280,9 @@ export class OfflineCharacterDB {
     tx.objectStore(STORES.characters).add(c);
     tx.objectStore(STORES.inventories).add({ characterId: c.characterId, capacity: 100, items: [] });
     tx.objectStore(STORES.equipment).add({ characterId: c.characterId, slots: {} });
-    tx.objectStore(STORES.skills).add({ characterId: c.characterId, learned: [] });
+    tx.objectStore(STORES.skills).add({
+      characterId: c.characterId, points: 1, learned: [], shortcuts: [], cooldowns: {},
+    });
     tx.objectStore(STORES.quests).add({ characterId: c.characterId, entries: [] });
     try { await done; return c; } catch (error) { throw dbError(error); }
   }
@@ -384,7 +425,7 @@ export class OfflineCharacterDB {
       character,
       inventory: inventory ?? { characterId: id, capacity: 100, items: [] },
       equipment: equipment ?? { characterId: id, slots: {} },
-      skills: skills ?? { characterId: id, learned: [] },
+      skills: skills ?? { characterId: id, points: 0, learned: [], shortcuts: [], cooldowns: {} },
       quests: quests ?? { characterId: id, entries: [] },
     };
   }
