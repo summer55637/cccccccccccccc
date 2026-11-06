@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151c25">
+  <title>單機冒險世界｜角色管理</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="./index.html" aria-label="單機冒險世界首頁">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <span><strong>單機冒險世界</strong><small>OFFLINE CHARACTER LOBBY</small></span>
+      </a>
+      <span class="offline-badge"><span></span>本機存檔</span>
+    </header>
+
+    <main>
+      <section class="intro">
+        <p class="eyebrow">YOUR ADVENTURE BEGINS HERE</p>
+        <h1>選擇你的角色</h1>
+        <p class="intro-copy">建立自己的冒險者。角色資料會保存在目前瀏覽器，不需要帳號或連接遊戲伺服器。</p>
+      </section>
+
+      <div id="appStatus" class="status-banner" role="status" aria-live="polite">正在開啟本機角色資料庫……</div>
+
+      <div class="lobby-grid">
+        <section class="panel create-panel" aria-labelledby="createTitle">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">NEW ADVENTURER</p>
+              <h2 id="createTitle">建立新角色</h2>
+            </div>
+            <span class="heading-icon" aria-hidden="true">＋</span>
+          </div>
+
+          <form id="createForm">
+            <label for="characterName">角色名稱</label>
+            <input id="characterName" name="name" type="text" maxlength="16"
+              autocomplete="off" placeholder="輸入角色名稱" required>
+            <p class="field-help">最多 16 個字，不可與現有角色重名。</p>
+
+            <label for="classId">選擇職業</label>
+            <select id="classId" name="classId" required>
+              <option value="knight">騎士｜近身戰鬥</option>
+              <option value="elf">精靈｜敏捷與遠程</option>
+              <option value="wizard">法師｜魔法能力</option>
+              <option value="lord">領主｜均衡成長</option>
+            </select>
+
+            <div class="starter-note">
+              <span aria-hidden="true">✧</span>
+              <p>新角色從 Lv.1 開始。初始數值是本機原型預設值，之後可依正式遊戲規則調整。</p>
+            </div>
+            <button id="createButton" class="primary-button" type="submit" disabled>建立角色</button>
+          </form>
+        </section>
+
+        <section class="panel roster-panel" aria-labelledby="rosterTitle">
+          <div class="panel-heading roster-heading">
+            <div>
+              <p class="eyebrow">LOCAL CHARACTERS</p>
+              <h2 id="rosterTitle">我的角色</h2>
+            </div>
+            <span id="characterCount" class="count-pill">0 位</span>
+          </div>
+
+          <div id="emptyState" class="empty-state">
+            <div class="empty-emblem" aria-hidden="true">✧</div>
+            <h3>還沒有角色</h3>
+            <p>建立第一位角色，開始你的冒險旅程。</p>
+          </div>
+          <div id="characterList" class="character-list" aria-live="polite"></div>
+
+          <section id="selectedPanel" class="selected-panel" hidden aria-labelledby="selectedTitle">
+            <div class="selected-title-row">
+              <div>
+                <p class="eyebrow">SELECTED CHARACTER</p>
+                <h3 id="selectedTitle">尚未選擇角色</h3>
+              </div>
+              <span class="selected-mark" aria-hidden="true">✓</span>
+            </div>
+            <div id="selectedDetails" class="selected-details"></div>
+            <button id="enterButton" class="primary-button enter-button" type="button">進入冒險</button>
+            <p class="field-help enter-help">目前先完成角色管理；遊戲地圖及戰鬥尚未接入。</p>
+          </section>
+        </section>
+      </div>
+
+      <section id="editPanel" class="panel edit-panel" hidden aria-labelledby="editTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">EDIT CHARACTER</p>
+            <h2 id="editTitle">修改角色資料</h2>
+          </div>
+          <button id="cancelEditButton" class="quiet-button" type="button">取消</button>
+        </div>
+        <form id="editForm">
+          <input id="editCharacterId" type="hidden">
+          <div class="edit-fields">
+            <div>
+              <label for="editName">角色名稱</label>
+              <input id="editName" type="text" maxlength="16" required>
+            </div>
+            <div>
+              <label for="editClassId">職業</label>
+              <select id="editClassId">
+                <option value="knight">騎士｜近身戰鬥</option>
+                <option value="elf">精靈｜敏捷與遠程</option>
+                <option value="wizard">法師｜魔法能力</option>
+                <option value="lord">領主｜均衡成長</option>
+              </select>
+            </div>
+          </div>
+          <button class="primary-button save-edit-button" type="submit">保存修改</button>
+        </form>
+      </section>
+
+      <footer class="page-footer">
+        <span>角色資料只儲存在目前瀏覽器及裝置。</span>
+        <span>單機開發原型 · 不連接原遊戲伺服器</span>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>
