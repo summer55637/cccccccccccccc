@@ -1,4 +1,5 @@
 import { awardExperience } from "../progression/service.js";
+import { getEquipmentBonuses } from "../inventory/items.js";
 import { getMonsterDefinition, getMonsterSpawns } from "./monsters.js";
 import {
   BASIC_ATTACK_COOLDOWN_MS,
@@ -152,7 +153,15 @@ export async function attackMonster(database, characterId, spawnId, options = {}
     throw new Error("距離太遠，請移動到怪物旁邊再攻擊。");
   }
 
-  const playerAttack = calculateBasicAttack(character, spawn.definition, checkedRandom(random));
+  const characterSave = await database.loadCharacterSave(characterId);
+  if (!characterSave) throw new Error("找不到角色存檔。");
+  const bonuses = getEquipmentBonuses(characterSave.equipment);
+  const playerAttack = calculateBasicAttack(
+    character,
+    spawn.definition,
+    checkedRandom(random),
+    bonuses.attackBonus,
+  );
   monsterState.hp = Math.max(0, monsterState.hp - playerAttack.damage);
   state.lastPlayerAttackAt = now;
 
@@ -180,7 +189,7 @@ export async function attackMonster(database, characterId, spawnId, options = {}
       character.position,
     );
     if (ai.state === "attack") {
-      counterAttack = calculateMonsterAttack(character, spawn.definition, checkedRandom(random));
+      counterAttack = calculateMonsterAttack(character, spawn.definition, checkedRandom(random), bonuses.defenseBonus);
       if (counterAttack.hit) {
         await database.updateCharacter(characterId, {
           hp: {
