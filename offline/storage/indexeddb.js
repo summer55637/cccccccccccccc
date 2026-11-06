@@ -159,7 +159,7 @@ function normalizePart(part, characterId, value) {
     return { characterId, slots: data.slots ?? {} };
   }
   if (part === "skills") {
-    const points = integer(data.points ?? 0, "技能點數", 0, 9999);
+    const points = integer(data.points ?? 1, "技能點數", 0, 9999);
     const learned = data.learned ?? [];
     if (!Array.isArray(learned) || learned.length > 200) {
       throw new TypeError("skills.learned 必須是合理大小的陣列。");
@@ -425,7 +425,7 @@ export class OfflineCharacterDB {
       character,
       inventory: inventory ?? { characterId: id, capacity: 100, items: [] },
       equipment: equipment ?? { characterId: id, slots: {} },
-      skills: skills ?? { characterId: id, points: 0, learned: [], shortcuts: [], cooldowns: {} },
+      skills: skills ?? { characterId: id, points: 1, learned: [], shortcuts: [], cooldowns: {} },
       quests: quests ?? { characterId: id, entries: [] },
     };
   }
