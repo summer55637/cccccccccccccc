@@ -89,7 +89,7 @@ function normalizeCharacter(input, ids, names) {
   assertObject(input, "角色資料");
   const allowed = [
     "schemaVersion", "characterId", "name", "nameKey", "classId", "level",
-    "jobLevel", "experience", "stats", "hp", "mp", "mapId", "position",
+    "jobLevel", "experience", "statPoints", "stats", "hp", "mp", "mapId", "position",
     "gold", "playTimeSeconds", "createdAt", "updatedAt",
   ];
   assertKeys(input, allowed, "角色資料");
@@ -135,6 +135,7 @@ function normalizeCharacter(input, ids, names) {
     level: assertInteger(input.level, "角色等級", 1, 100000),
     jobLevel: assertInteger(input.jobLevel, "職業等級", 1, 100000),
     experience: assertInteger(input.experience, "經驗值", 0, Number.MAX_SAFE_INTEGER),
+    statPoints: input.statPoints === undefined ? 0 : assertInteger(input.statPoints, "能力點數", 0, 9999),
     stats,
     hp: gauge(input.hp, "HP"),
     mp: gauge(input.mp, "MP"),
