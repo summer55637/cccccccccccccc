@@ -201,9 +201,47 @@ function normalizeBackup(input) {
     return { characterId, slots: record.slots };
   });
   const skills = normalizePartRecords(source.skills, "技能", characterIds, (record, characterId) => {
-    assertKeys(record, ["characterId", "learned"], "技能資料");
-    if (!Array.isArray(record.learned) || record.learned.length > 10000) throw new TypeError("技能清單格式錯誤。");
-    return { characterId, learned: record.learned };
+    assertKeys(record, ["characterId", "points", "learned", "shortcuts", "cooldowns"], "技能資料");
+    const points = record.points === undefined ? 1 : assertInteger(record.points, "技能點數", 0, 9999);
+    const learnedInput = record.learned ?? [];
+    if (!Array.isArray(learnedInput) || learnedInput.length > 200) {
+      throw new TypeError("技能清單格式錯誤。");
+    }
+    const learnedIds = new Set();
+    const learned = learnedInput.map((entry, index) => {
+      assertObject(entry, "第 " + (index + 1) + " 個技能紀錄");
+      assertKeys(entry, ["skillId", "level"], "技能紀錄");
+      const skillId = assertText(entry.skillId, "技能 ID", 128);
+      if (learnedIds.has(skillId)) throw new Error("備份中的技能不可重複。");
+      learnedIds.add(skillId);
+      return {
+        skillId,
+        level: assertInteger(entry.level, "技能等級", 1, 10),
+      };
+    });
+    const shortcutsInput = record.shortcuts ?? [];
+    if (!Array.isArray(shortcutsInput) || shortcutsInput.length > 4) {
+      throw new TypeError("技能快捷欄最多只能有 4 個。");
+    }
+    const shortcutSlots = new Set();
+    const shortcuts = shortcutsInput.map((entry, index) => {
+      assertObject(entry, "第 " + (index + 1) + " 個技能快捷欄");
+      assertKeys(entry, ["slot", "skillId"], "技能快捷欄");
+      const slot = assertInteger(entry.slot, "技能快捷欄位", 1, 4);
+      const skillId = assertText(entry.skillId, "快捷技能 ID", 128);
+      if (shortcutSlots.has(slot)) throw new Error("備份中的技能快捷欄位不可重複。");
+      if (!learnedIds.has(skillId)) throw new Error("技能快捷欄只能放入已學習技能。");
+      shortcutSlots.add(slot);
+      return { slot, skillId };
+    });
+    const cooldownsInput = record.cooldowns ?? {};
+    assertObject(cooldownsInput, "技能冷卻資料");
+    const cooldowns = {};
+    for (const [skillIdInput, expiresAtInput] of Object.entries(cooldownsInput)) {
+      const skillId = assertText(skillIdInput, "冷卻技能 ID", 128);
+      cooldowns[skillId] = assertInteger(expiresAtInput, "技能冷卻時間", 0, Number.MAX_SAFE_INTEGER);
+    }
+    return { characterId, points, learned, shortcuts, cooldowns };
   });
   const quests = normalizePartRecords(source.quests, "任務", characterIds, (record, characterId) => {
     assertKeys(record, ["characterId", "entries"], "任務資料");
@@ -240,7 +278,9 @@ function normalizeBackup(input) {
   };
   ensureDefault(inventory.records, inventory.seen, id => ({ characterId: id, capacity: 100, items: [] }));
   ensureDefault(equipment.records, equipment.seen, id => ({ characterId: id, slots: {} }));
-  ensureDefault(skills.records, skills.seen, id => ({ characterId: id, learned: [] }));
+  ensureDefault(skills.records, skills.seen, id => ({
+    characterId: id, points: 1, learned: [], shortcuts: [], cooldowns: {},
+  }));
   ensureDefault(quests.records, quests.seen, id => ({ characterId: id, entries: [] }));
 
   return {
