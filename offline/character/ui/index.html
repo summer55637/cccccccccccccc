@@ -85,6 +85,14 @@
               <span class="selected-mark" aria-hidden="true">✓</span>
             </div>
             <div id="selectedDetails" class="selected-details"></div>
+            <section class="progression-panel" aria-label="角色經驗及能力值">
+              <div class="experience-heading"><strong>經驗值</strong><span id="experienceText">0 / 100</span></div>
+              <div class="experience-track" role="progressbar" aria-label="升級經驗值" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="experienceFill" class="experience-fill"></div></div>
+              <h4>角色能力值</h4>
+              <div id="statDetails" class="selected-details stat-details"></div>
+              <div class="stat-point-heading"><strong id="statPointsLabel">可用能力點數：0</strong><span>每次升級獲得 3 點</span></div>
+              <div id="statAllocation" class="stat-allocation"></div>
+            </section>
             <button id="enterButton" class="primary-button enter-button" type="button">進入冒險</button>
             <p class="field-help enter-help">目前先完成角色管理；遊戲地圖及戰鬥尚未接入。</p>
           </section>
