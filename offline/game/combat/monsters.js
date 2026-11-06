@@ -3,7 +3,7 @@ export const MONSTER_DEFINITIONS = Object.freeze({
     id: "forest-slime",
     name: "森林史萊姆",
     level: 1,
-    maxHp: 30,
+    maxHp: 28,
     attack: 3,
     defense: 1,
     hitChance: 0.72,
