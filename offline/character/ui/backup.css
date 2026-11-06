@@ -5,3 +5,14 @@
 @media (max-width: 480px) {
   .backup-actions .small-button { flex: 1; }
 }
+
+.progression-panel { margin: 18px 0; padding: 15px; border: 1px solid #39495a; border-radius: 11px; background: rgba(11, 19, 28, .45); }
+.experience-heading, .stat-point-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #dce3ea; font-size: 12px; }
+.experience-heading span, .stat-point-heading span { color: #8f9baa; font-size: 10px; }
+.experience-track { height: 9px; margin: 9px 0 16px; overflow: hidden; border-radius: 99px; background: #101820; border: 1px solid #3b4a59; }
+.experience-fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8b6c3e, #e5bc79); transition: width .2s ease; }
+.progression-panel h4 { margin: 0 0 10px; color: #e5eaf0; font-size: 13px; }
+.stat-details { margin: 0 0 14px; }
+.stat-point-heading { margin-bottom: 10px; }
+.stat-allocation { display: flex; flex-wrap: wrap; gap: 7px; }
+.stat-add-button { font-size: 10px; padding: 7px 9px; }
