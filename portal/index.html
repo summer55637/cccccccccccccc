@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小樹放置天堂|官方網站</title>
+<meta name="description" content="小樹放置天堂:上線即時戰鬥，下線離線掛機。王族、騎士、妖精、法師，收集變身與魔法娃娃，深入地監冒險。測試服開放中。">
+<meta name="theme-color" content="#0d0a06">
+<meta property="og:title" content="小樹放置天堂">
+<meta property="og:description" content="上線即時戰鬥，下線離線掛機。你休息的時候，角色也在長大。">
+<meta property="og:image" content="https://xiaoshu.gg/img/hero.webp">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d0a06'/%3E%3Ccircle cx='32' cy='26' r='17' fill='%23c9a24a'/%3E%3Crect x='28' y='38' width='8' height='18' rx='3' fill='%238a5a34'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="img/hero.webp" media="(min-width: 721px)">
+<link rel="preload" as="image" href="img/hero-m.webp" media="(max-width: 720px)">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="orn" viewBox="0 0 220 14"><path d="M0 7h92M128 7h92" stroke="#b98d3e" stroke-width="1"/><path d="M110 1l6 6-6 6-6-6z" fill="none" stroke="#e6c278" stroke-width="1.2"/><circle cx="96" cy="7" r="1.6" fill="#b98d3e"/><circle cx="124" cy="7" r="1.6" fill="#b98d3e"/></symbol>
+  </defs>
+</svg>
+
+<nav class="nav" id="nav" data-hero></nav>
+<script src="nav.js"></script>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <h1 style="margin:0"><img class="logo" src="img/logo.webp" width="760" height="525" alt="小樹放置天堂"></h1>
+    <div class="status"><i></i>測試服開放中</div>
+    <p class="tagline">上線即時戰鬥，下線離線掛機</p>
+    <p class="tagline-2">你休息的時候，角色也在長大。<span style="white-space:nowrap">11/4(三)晚上 8 點正式開服。</span></p>
+    <div class="cta">
+      <a class="btn btn-gold" href="https://test.xiaoshu.gg/play/" target="_blank" rel="noopener">▶ 進入遊戲</a>
+      <a class="btn btn-ghost" href="#join">加入社群</a>
+    </div>
+  </div>
+  <div class="scroll-cue">SCROLL</div>
+</header>
+
+<main>
+  <section class="quick-sec" id="quick">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="en">QUICK LINKS</div>
+        <h2>常用說明快速入口</h2>
+        <svg class="orn"><use href="#orn"/></svg>
+        <p>常被問到的，點一下直接跳到那一段</p>
+      </div>
+      <input class="quick-find" id="quickFind" type="search" placeholder="輸入關鍵字找說明，例如：試煉、月卡" autocomplete="off">
+      <div class="quick" id="quickList">
+        <a href="guide.html#class-trial"><b>職業試煉</b><span>各職業 15/30 級的任務與獎勵</span></a>
+        <a href="systems.html#monthcard"><b>月卡</b><span>月卡與離線掛機月卡有什麼用</span></a>
+        <a href="systems.html#giftcode"><b>禮包碼</b><span>兌換方式與注意事項</span></a>
+        <a href="guide.html#afk"><b>離線掛機</b><span>怎麼掛、最久幾小時</span></a>
+        <a href="systems.html#warehouse"><b>倉庫</b><span>存取道具與金幣</span></a>
+        <a href="systems.html#market"><b>交易所</b><span>上架、購買與手續</span></a>
+        <a href="systems.html#trade"><b>面對面交易</b><span>玩家之間直接交換</span></a>
+        <a href="systems.html#rank"><b>排行榜</b><span>各榜怎麼上榜</span></a>
+        <a href="guide.html#newbie-gift"><b>創角送的禮</b><span>新角色身上有什麼</span></a>
+        <a href="guide.html#route"><b>建議練功路線</b><span>依等級去哪裡練</span></a>
+        <a href="zones.html"><b>獵場列表</b><span>開放中的野外與地監</span></a>
+        <a href="changelog.html"><b>更新日誌</b><span>最近新增與調整了什麼</span></a>
+      </div>
+      <div class="quick-none" id="quickNone">找不到，試試下方「冒險資料」各頁，或到社群詢問。</div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="en">FEATURES</div>
+        <h2>遊戲特色</h2>
+        <svg class="orn"><use href="#orn"/></svg>
+      </div>
+      <div class="features">
+        <div class="feat">
+          <span class="no">壹</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg>
+          <h3>即時戰鬥</h3>
+          <p>上線時親自操作，與怪物即時交手，每一下攻擊都看得見。</p>
+        </div>
+        <div class="feat">
+          <span class="no">貳</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/><path d="M16 3v4M14 5h4"/></svg>
+          <h3>離線掛機</h3>
+          <p>下線也不停，角色照樣打怪成長，回來直接收成。</p>
+        </div>
+        <div class="feat">
+          <span class="no">參</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="11" height="15" rx="1.5" transform="rotate(-8 8.5 12.5)"/><rect x="10" y="4" width="11" height="15" rx="1.5" transform="rotate(8 15.5 11.5)"/><path d="m15.5 9 1 2 2 .3-1.5 1.4.4 2-1.9-1-1.9 1 .4-2-1.5-1.4 2-.3z"/></svg>
+          <h3>變身與娃娃</h3>
+          <p>收集變身卡與魔法娃娃，變身提升速度，召喚娃娃增強能力。</p>
+        </div>
+        <div class="feat">
+          <span class="no">肆</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V10a8 8 0 0 1 16 0v11"/><path d="M8 21v-8a4 4 0 0 1 8 0v8"/><path d="M2 21h20"/></svg>
+          <h3>地監探索</h3>
+          <p>層層深入的地監等你挑戰，傳送書籤直達想去的樓層。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="classes-sec" id="classes">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="en">CLASSES</div>
+        <h2>職業介紹</h2>
+        <svg class="orn"><use href="#orn"/></svg>
+        <p>四種經典職業，選一條屬於你的成長之路</p>
+      </div>
+      <div class="classes">
+        <div class="cls"><div class="seal">王</div><h3>王族</h3><p>統御眾人的領袖<br>創立血盟、號令同伴</p></div>
+        <div class="cls"><div class="seal">騎</div><h3>騎士</h3><p>重甲在身的前鋒<br>近身肉搏、屹立不倒</p></div>
+        <div class="cls"><div class="seal">妖</div><h3>妖精</h3><p>森林的守護者<br>弓術精湛、操控精靈</p></div>
+        <div class="cls"><div class="seal">法</div><h3>法師</h3><p>鑽研魔法的智者<br>強大法術、攻守兼備</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="guide">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="en">ADVENTURE GUIDE</div>
+        <h2>冒險資料</h2>
+        <svg class="orn"><use href="#orn"/></svg>
+        <p>出發前先查一查：怎麼開始、各系統怎麼用、哪裡練功、打什麼掉什麼</p>
+      </div>
+      <div class="guides more">
+        <a class="guide-card" href="guide.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M8 7h6M8 11h6"/></svg>
+          <div><h3>新手指南</h3><p>創角、選職業、第一步怎麼練</p></div>
+        </a>
+        <a class="guide-card" href="systems.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+          <div><h3>系統介紹</h3><p>倉庫、卡片、自動練功、離線掛機</p></div>
+        </a>
+        <a class="guide-card" href="skills.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.4 6.6L21 9l-5.2 4.2L17.6 20 12 16.3 6.4 20l1.8-6.8L3 9l6.6-.4z"/></svg>
+          <div><h3>技能介紹</h3><p>各職業魔法、學習等級與技能書</p></div>
+        </a>
+        <a class="guide-card" href="enhance.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6M16 16l4 4M19 21l2-2"/></svg>
+          <div><h3>裝備強化</h3><p>卷軸、安定值、刻印裝備規則</p></div>
+        </a>
+        <a class="guide-card" href="cards.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="11" height="15" rx="1.5" transform="rotate(-8 8.5 12.5)"/><rect x="10" y="4" width="11" height="15" rx="1.5" transform="rotate(8 15.5 11.5)"/><path d="M15.5 9l1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.3-2.3 1.3.4-2.6-1.9-1.8 2.6-.4z"/></svg>
+          <div><h3>變身與娃娃</h3><p>卡片能力、變身可拿的武器、收藏加成</p></div>
+        </a>
+        <a class="guide-card" href="pets.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="9" r="2"/><circle cx="9.5" cy="5" r="2"/><circle cx="14.5" cy="5" r="2"/><circle cx="19" cy="9" r="2"/><path d="M12 11c-3 0-6 4.5-6 7a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3c0-2.5-3-7-6-7z"/></svg>
+          <div><h3>召喚與寵物</h3><p>帶寵物、召喚術與魅力的隱藏加成</p></div>
+        </a>
+        <a class="guide-card" href="events.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1.5S10 8 12 8zM12 8c2-4 6-4 6-1.5S14 8 12 8z"/></svg>
+          <div><h3>活動</h3><p>進行中的活動與新手福利</p></div>
+        </a>
+        <a class="guide-card" href="changelog.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l14-6v14L3 13z"/><path d="M7 13v5a2 2 0 0 0 4 0v-3.5"/><path d="M20 9v6"/></svg>
+          <div><h3>更新日誌</h3><p>最近新增與調整了什麼</p></div>
+        </a>
+        <a class="guide-card" href="zones.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>
+          <div><h3>獵場列表</h3><p>開放中的野外與地監<span data-count="zones"></span></p></div>
+        </a>
+        <a class="guide-card" href="monsters.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c4.5 0 8 3.2 8 7.5 0 2.6-1.3 4.4-3 5.5V20h-3v-2h-4v2H7v-4c-1.7-1.1-3-2.9-3-5.5C4 6.2 7.5 3 12 3z"/><circle cx="9" cy="10.5" r="1.5"/><circle cx="15" cy="10.5" r="1.5"/></svg>
+          <div><h3>怪物掉落</h3><p><span data-count="mobs">每隻</span>怪物的掉落，可用道具名反查</p></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="join" id="join">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="en">JOIN US</div>
+        <h2>開始遊戲 &amp; 加入社群</h2>
+        <svg class="orn"><use href="#orn"/></svg>
+        <p>有問題到社群問，或加官方帳號私訊客服</p>
+      </div>
+      <div class="links">
+        <a class="link featured" href="https://test.xiaoshu.gg/play/" target="_blank" rel="noopener">
+          <div class="ic play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></div>
+          <div><div class="tt">進入遊戲<span class="badge">測試服</span></div><div class="dd">test.xiaoshu.gg</div></div>
+          <div class="go">立即遊玩 ›</div>
+        </a>
+        <a class="link" href="https://www.facebook.com/profile.php?id=61595933152010" target="_blank" rel="noopener">
+          <div class="ic fb"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.6-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H8v3h2.6V21z"/></svg></div>
+          <div><div class="tt">臉書粉專</div><div class="dd">公告・活動・最新消息</div></div>
+          <div class="go">前往粉專 ›</div>
+        </a>
+        <a class="link" href="https://line.me/ti/g2/BRRPQ8UmRr-F0L3CgiE9GZdsnx08pMw7UhxCXg" target="_blank" rel="noopener">
+          <div class="ic line"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8.5 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm7 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM8.5 12.5c-2.5 0-5 1.3-5 3.3V18h10v-2.2c0-2-2.5-3.3-5-3.3zm7 0c-.6 0-1.2.1-1.8.2 1 .8 1.8 1.8 1.8 3.1V18h5v-2.2c0-2-2.5-3.3-5-3.3z"/></svg></div>
+          <div><div class="tt">LINE 社群</div><div class="dd">玩家交流・活動通知</div></div>
+          <div class="go">加入社群 ›</div>
+        </a>
+        <a class="link" href="https://line.me/R/ti/p/%40277pvkms" target="_blank" rel="noopener">
+          <div class="ic line"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.5c-5 0-9 3.2-9 7.2 0 3.6 3.2 6.6 7.5 7.1.3.1.7.2.8.5.1.3 0 .7 0 .9l-.1.8c0 .2-.2.9.8.5s5.4-3.2 7.4-5.4c1.4-1.5 2-3 2-4.4 0-4-4-7.2-9-7.2zM8.3 12.9H6.5a.4.4 0 0 1-.4-.4V8.9a.4.4 0 0 1 .8 0v3.2h1.4a.4.4 0 0 1 0 .8zm1.6-.4a.4.4 0 0 1-.8 0V8.9a.4.4 0 0 1 .8 0zm4.3 0a.4.4 0 0 1-.7.2l-1.9-2.5v2.3a.4.4 0 0 1-.8 0V8.9a.4.4 0 0 1 .7-.2l1.9 2.5V8.9a.4.4 0 0 1 .8 0zm2.9-2.2a.4.4 0 0 1 0 .8h-1.4v.9h1.4a.4.4 0 0 1 0 .8h-1.8a.4.4 0 0 1-.4-.4V8.9c0-.2.2-.4.4-.4h1.8a.4.4 0 0 1 0 .8h-1.4v.9z"/></svg></div>
+          <div><div class="tt">LINE 官方帳號</div><div class="dd">客服私訊 <span class="lineid">@277pvkms</span></div></div>
+          <div class="go">私訊客服 ›</div>
+        </a>
+      </div>
+
+      <div class="disclaimer"><b>免責聲明</b><br>
+        一、本遊戲為個人研究與技術學習專案。<br>
+        二、玩家的一切贊助皆屬自願行為，無任何強制；贊助所得全數用於伺服器租用、維護與研究開發。<br>
+        三、請玩家自行評估經濟能力，理性贊助，勿超出自身負擔。<br>
+        四、如遇爭議、異常狀況或違規行為(含外掛、漏洞利用、多開刷榜等)，官方保留處置與最終解釋權。
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap"><span class="brand">小樹放置天堂</span>© 2026 小樹放置天堂 版權所有</div>
+</footer>
+
+<script src="data/wiki.js" defer></script>
+<script>
+  // 冒險資料卡片填入目前開放的獵場/怪物數(資料讀不到就維持原本的文字)
+  window.addEventListener('DOMContentLoaded', function () {
+    var W = window.WIKI; if (!W) return;
+    var n = { zones: '(共 ' + W.zones.length + ' 區)', mobs: Object.keys(W.mobs).length + ' 種' };
+    document.querySelectorAll('[data-count]').forEach(function (el) { el.textContent = n[el.dataset.count]; });
+  });
+  // 常用快速入口:輸入關鍵字即時篩選
+  (function () {
+    var f = document.getElementById('quickFind'); if (!f) return;
+    var items = document.querySelectorAll('#quickList a'), none = document.getElementById('quickNone');
+    f.addEventListener('input', function () {
+      var k = f.value.trim().toLowerCase(), n = 0;
+      items.forEach(function (a) { var ok = !k || a.textContent.toLowerCase().indexOf(k) >= 0; a.style.display = ok ? '' : 'none'; if (ok) n++; });
+      none.style.display = n ? 'none' : 'block';
+    });
+  })();
+</script>
+</body>
+</html>

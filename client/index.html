@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<!--
+  小樹 — 專有軟體 / Proprietary software. Copyright (c) 2026. All rights reserved.
+  本客戶端程式、通訊協定、加密資源包與所有素材受著作權法保護,僅授權於本遊戲之正常遊玩。
+  禁止逆向工程、反編譯、反混淆、修改、擷取或重放通訊協定、製作或使用外掛、腳本、自動化工具,或協助他人為上述行為
+  違者將終止帳號並保留民刑事法律追訴權。
+  This game client, its network protocol, encrypted asset packs and all artwork are proprietary and protected by copyright law
+  licensed solely for normal play of this game. Reverse engineering, decompiling, deobfuscating, modifying, extracting or replaying
+  the protocol, creating or using cheats, bots or automation tools, or assisting anyone in doing so, violates the Terms of Service
+  and applicable law. Accounts will be terminated and legal action may be taken.
+-->
+<html>
+<head>
+  <meta charset="utf-8">
+
+  <title>小樹</title><!-- 分頁標題別顯示專案名 gocc;用登入頁 logo 的遊戲名-->
+
+  <!-- 全螢幕 meta 全家桶
+       ⚠ viewport-fit=cover 是 SafeArea 元件在瀏海機生效的前提(官方模板沒帶,別刪)-->
+  <meta name="viewport"
+        content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1,minimal-ui=true,viewport-fit=cover"/>
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no">
+  <!-- 📱 :加入桌面 App 要有圖不是一片黑 → 圖示=login_bg 的小樹 logo 方形裁切;啟動圖=login_bg cover 裁各機型全螢幕尺寸。
+       檔案在 build-templates/web-mobile/pwa/,建置時原樣進構建包;iOS 只在加入桌面時抓,一般開頁不下載。-->
+  <link rel="apple-touch-icon" sizes="180x180" href="pwa/icon-180.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="pwa/splash-1206x2622.jpg"><!-- iPhone 16 Pro/17/17 Pro-->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="pwa/splash-1320x2868.jpg"><!-- iPhone 16 Pro Max/17 Pro Max-->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="pwa/splash-1260x2736.jpg"><!-- iPhone Air-->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="pwa/splash-1179x2556.jpg"><!-- iPhone 14 Pro/15/15 Pro/16-->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="pwa/splash-1290x2796.jpg"><!-- iPhone 14 Pro Max/15 Plus/15 Pro Max/16 Plus-->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="pwa/splash-1170x2532.jpg"><!-- iPhone 12/13/14-->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="pwa/splash-1284x2778.jpg"><!-- iPhone 12/13 Pro Max/14 Plus-->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="pwa/splash-1125x2436.jpg"><!-- iPhone X/XS/11 Pro/12 mini/13 mini-->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="pwa/splash-1242x2688.jpg"><!-- iPhone XS Max/11 Pro Max-->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="pwa/splash-828x1792.jpg"><!-- iPhone XR/11-->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="pwa/splash-750x1334.jpg"><!-- iPhone 8/SE2/SE3-->
+  <meta name="theme-color" content="#0c1016">
+
+  <meta name="renderer" content="webkit"/>
+  <meta name="force-rendering" content="webkit"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <meta name="msapplication-tap-highlight" content="no">
+
+  <!--       橫拿=Shell 切橫版 1200×675。build-play.mjs 的 st.screen.orientation='auto' 不要動(改 portrait 引擎會把 GameDiv 轉 90°,橫版變側躺)-->
+  <link rel="manifest" href="pwa/manifest.json"><!-- 加入主畫面(Android):orientation=any(已安裝的 WebAPK 要等更新或重新加到主畫面才解鎖)-->
+  <meta name="full-screen" content="yes"/>
+  <meta name="x5-fullscreen" content="true"/>
+  <meta name="360-fullscreen" content="true"/>
+  <meta name="x5-page-mode" content="app">
+
+  <link rel="stylesheet" type="text/css" href="style.f76d1.css"/>
+  <style>
+    html, body { background: #000; overscroll-behavior: none; } /* 純黑=桌機留邊區與頁面同色 */
+    /* 📱 iPhone 17 Pro:點帳密欄位整頁被拉扯放大、進遊戲版面偏上底下黑。*/
+    /* ⚠ 撤掉 html,body{position:fixed;inset:0}:手機實測整個版面反而往上頂到狀態列下(安全區內縮失效)。只留 16px 與收鍵盤重算。 */
+    input, textarea { font-size: 16px !important; }
+  </style>
+  <script>
+    /*       失焦 body.scrollTop=0;鍵盤收完 500ms 後才用「歷史最大高度」重算)。
+       原因:iOS「加入桌面」standalone 的鍵盤會擠 innerHeight(Safari 只縮 visualViewport 不會)→ 引擎 resize 把畫布壓矮
+       Shell 翻 SHOW_ALL、版面跳掉;鍵盤收起 WebKit 常不復原 innerHeight → 底下黑帶。Cocos EditBox 只對 Android 關
+       handleResizeEvent,所以在引擎載入前包住 window 的 resize 監聽補 iOS。 */
+    (function () {
+      var mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+      var isInput = function (el) { return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'); };
+      var typing = false, baseW = 0, baseH = 0, pending = false;
+      /* 打字守門保留(resize 與下面 matchMedia 兩條)——打字中轉向等鍵盤收起(focusout)才補發 resize */
+      var add = window.addEventListener;
+      window.addEventListener = function (type, fn, opt) {
+        if ((type === 'resize' || type === 'orientationchange') && typeof fn === 'function') {
+          var wrapped = function (e) {
+            if (typing) { pending = true; return; } /* 輸入中:吞掉 */
+            if (baseH && window.innerWidth === baseW && window.innerHeight < baseH) { pending = true; return; } /* 鍵盤收了 innerHeight 還沒復原:不縮畫布 */
+            return fn.call(window, e);
+          };
+          return add.call(window, type, wrapped, opt);
+        }
+        return add.call(window, type, fn, opt);
+      };
+      /* 📱 引擎轉向走 matchMedia('(orientation: portrait|landscape)') 的 change(screen-adapter _registerEvent → _updateFrame 直接改畫布),不經上面的 resize 包裝
+         → 同一套打字守門也包住它:直式打字時鍵盤把可視區壓成寬>高,不准翻畫布(不然 Shell 翻橫版、safe 關掉、EditBox 失焦、打到一半的字消失);focusout 補發的 resize 會讓引擎照實際尺寸重算。
+         只包 orientation 那兩條(DPR 的 resolution 查詢是 {once:true} 自己重掛,吞掉就再也收不到) */
+      if (window.MediaQueryList && MediaQueryList.prototype) {
+        var mqAdd = MediaQueryList.prototype.addEventListener, mqAddL = MediaQueryList.prototype.addListener;
+        var isOri = function (mq) { return /orientation/.test((mq && mq.media) || ''); };
+        var gate = function (fn) { return function (e) { if (typing || (baseH && window.innerWidth === baseW && window.innerHeight < baseH)) { pending = true; return; } return fn.call(this, e); }; };
+        if (mqAdd) MediaQueryList.prototype.addEventListener = function (type, fn, opt) { return mqAdd.call(this, type, (type === 'change' && typeof fn === 'function' && isOri(this)) ? gate(fn) : fn, opt); };
+        if (mqAddL) MediaQueryList.prototype.addListener = function (fn) { return mqAddL.call(this, (typeof fn === 'function' && isOri(this)) ? gate(fn) : fn); };
+      }
+      /* ⌨ 給 Shell 看「鍵盤開著或還沒收完」(打字中,或收鍵盤後 innerHeight 還沒回原高):橫版這段時間不重算安全區(sys.getSafeAreaRect 吃當下 innerHeight,畫布被上面守門擋著沒變) */
+      window.GOLINE_KB_HOLD = function () { return typing || (baseH > 0 && window.innerWidth === baseW && window.innerHeight < baseH); };
+      var scrollTop0 = function () { try { window.scrollTo(0, 0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; } catch (e) {} };
+      document.addEventListener('focusin', function (e) {
+        if (!isInput(e.target)) return;
+        if (!typing) { baseW = window.innerWidth; baseH = window.innerHeight; }
+        typing = true;
+      }, true);
+      document.addEventListener('focusout', function (e) {
+        if (!isInput(e.target)) return;
+        var t0 = Date.now();
+        var tick = function () {
+          if (isInput(document.activeElement)) return; /* 換到下一格輸入框:還在輸入,守門繼續 */
+          var restored = !mobile || window.innerHeight >= baseH || window.innerWidth !== baseW;
+          if (!restored && Date.now() - t0 < 1500) { setTimeout(tick, 50); return; }
+          typing = false;
+          scrollTop0();
+          if (restored) {
+            baseW = 0; baseH = 0;
+            if (pending) { pending = false; try { window.dispatchEvent(new Event('resize')); } catch (e2) {} }
+          }
+          /* 沒復原:保留 baseH 守門,等 innerHeight 真的回來的那次 resize 才放行(畫布維持滿版,不留黑帶) */
+        };
+        setTimeout(tick, 50);
+      }, true);
+      window.addEventListener('orientationchange', function () { baseW = 0; baseH = 0; setTimeout(scrollTop0, 300); });
+    })();
+  </script>
+</head>
+<body>
+  <!-- HTML 載入層整段拿掉(引擎起來前純黑),直接進 Cocos 的資源下載頁;Cocos 開場 logo 由 application.ejs 關掉-->
+  <div id="GameDiv" cc_exact_fit_screen="true">
+      <div id="Cocos3dGameContainer">
+        <canvas id="GameCanvas" oncontextmenu="event.preventDefault()" tabindex="99"></canvas>
+      </div>
+    </div>
+  
+
+<!-- Polyfills bundle. -->
+
+<script src="src/polyfills.bundle.5adbf.js" charset="utf-8"> </script>
+
+
+<!-- SystemJS support. -->
+<script src="src/system.bundle.543e6.js" charset="utf-8"> </script>
+
+<!-- Import map -->
+<script src="src/import-map.4e643.json" type="systemjs-importmap" charset="utf-8"> </script>
+
+<script>
+    System.import('./index.1d55c.js').catch(function(err) { console.error(err); })
+</script>
+
+</body>
+</html>

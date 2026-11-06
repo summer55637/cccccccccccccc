@@ -1,0 +1,1442 @@
+syntax = "proto3";
+
+package goline;
+
+message ClientMsg {
+  Auth auth = 8;
+  SelectChar select_char = 9;
+  SellItem sell_item = 10;
+  UseItem use_item = 12;
+  DiscardItem discard_item = 13;
+  InvLock inv_lock = 192;
+  DiscardJunk discard_junk = 193;
+  DgBook dg_book = 194;
+  FriendOpen friend_open = 210;
+  FriendAdd friend_add = 211;
+  FriendDel friend_del = 212;
+  BuyBatch buy_batch = 230;
+  Equip equip = 15;
+  Unequip unequip = 16;
+  EnhanceInv enhance_inv = 19;
+  ChatSend chat = 21;
+  MailList mail_list = 25;
+  ClaimMail claim_mail = 29;
+  ClaimAllMail claim_all_mail = 30;
+  OpenShop open_shop = 31;
+  BuyItem buy_item = 32;
+  PartyInvite party_invite = 150;
+  PartyAnswer party_answer = 151;
+  PartyLeave party_leave = 152;
+  PartyBan party_ban = 153;
+  AllocStat alloc_stat = 89;
+  SetAutoCfg set_auto = 90;
+  ChooseElfEle choose_elf_ele = 94;
+  CreateChar create_char = 98;
+  DeleteChar delete_char = 156;
+  SuspiciousInput suspicious_input = 110;
+  WorldEnter world_enter = 136;
+  WorldStep world_step = 154;
+  WorldLeave world_leave = 138;
+  WorldLook world_look = 139;
+  WorldAttack world_attack = 147;
+  WorldHome world_home = 157;
+  WorldRestart world_restart = 158;
+  WorldPk world_pk = 162;
+  ClanOpen clan_open = 163;
+  ClanCreate clan_create = 164;
+  ClanApply clan_apply = 165;
+  ClanReview clan_review = 166;
+  ClanLeave clan_leave = 167;
+  ClanKick clan_kick = 168;
+  ClanRank clan_rank = 169;
+  CastleCmd castle_cmd = 173;
+  NpcTele npc_tele = 174;
+  NpcTalk npc_talk = 175;
+  NpcAction npc_action = 176;
+  PickUp pick_up = 177;
+  ClanEmblem clan_emblem = 170;
+  QuestCmd quest_cmd = 172;
+  ClanTitle clan_title = 171;
+  RepairItem repair_item = 160;
+  Bookmark bookmark = 159;
+  BagSort bag_sort = 180;
+  EnhanceBatch enhance_batch = 183;
+  Hotkeys hotkeys = 161;
+  WorldSwing world_swing = 155;
+  PetCmd pet_cmd = 149;
+  CastSkill cast_skill = 148;
+  TradeReq trade_req = 140;
+  TradeAnswer trade_answer = 141;
+  TradeAdd trade_add = 142;
+  TradeOk trade_ok = 144;
+  TradeCancel trade_cancel = 145;
+  TradeGold trade_gold = 146;
+  ExQuery ex_query = 178;
+  ExAct ex_act = 179;
+  CardMerge card_merge = 184;
+  CardPityBuy card_pity_buy = 185;
+  CardBookReq card_book_req = 186;
+  DollSummon magic_doll = 187;
+  CardPoly card_poly = 188;
+  DiaShop dia_shop = 189;
+  WhAct wh_act = 190;
+  ItemBookAct item_book = 191;
+}
+
+message SuspiciousInput {
+  string action = 1;
+}
+
+message AllocStat {
+  string attr = 1;
+}
+
+message SetAutoCfg {
+  bytes cfg_json = 1;
+}
+
+message ChooseElfEle {
+  string ele = 1;
+}
+
+message CreateChar {
+  int32 slot = 1;
+  string cls = 2;
+  string raw_cls = 3;
+  string name = 4;
+  int32 str = 5;
+  int32 dex = 6;
+  int32 con = 7;
+  int32 int_ = 8;
+  int32 wis = 9;
+  int32 cha = 10;
+}
+
+message DeleteChar {
+  int32 slot = 1;
+  string name = 2;
+}
+
+message OpenShop {
+  string npc_id = 1;
+}
+
+message BuyItem {
+  string id = 1;
+  int32 qty = 2;
+}
+
+message BuyLine {
+  string id = 1;
+  int32 qty = 2;
+}
+
+message BuyBatch {
+  repeated BuyLine lines = 1;
+}
+
+message MailList {
+}
+
+message ClaimMail {
+  int64 mid = 1;
+}
+
+message ClaimAllMail {
+}
+
+message ChatSend {
+  string text = 1;
+  string chan = 2;
+  string equip_slot = 3;
+  string to = 4;
+}
+
+message DeviceInfo {
+  string id = 1;
+  string fp = 2;
+  string ua = 3;
+  string plat = 4;
+  string gpu = 5;
+  bool mob = 6;
+  string sc = 7;
+  string lang = 8;
+  string tz = 9;
+  string tzo = 10;
+  string hw = 11;
+  string touch = 12;
+  string cv = 13;
+}
+
+message Auth {
+  string token = 1;
+  DeviceInfo device = 2;
+  string nonce = 3;
+  string ver = 4;
+  string resume_conn = 5;
+  string resume_info = 6;
+}
+
+message SelectChar {
+  int32 ci = 1;
+}
+
+message SellItem {
+  int32 idx = 1;
+  int32 cnt = 2;
+}
+
+message UseItem {
+  int32 idx = 1;
+  int32 cnt = 2;
+}
+
+message CardMerge {
+  string deck = 1;
+  repeated int32 ids = 2;
+  int32 auto_grade = 3;
+  int32 auto_times = 4;
+}
+
+message CardPityBuy {
+  string deck = 1;
+}
+
+message CardBookReq {
+}
+
+message DollSummon {
+  int32 card = 1;
+}
+
+message CardPoly {
+  int32 card = 1;
+}
+
+message DiaShop {
+  string op = 1;
+  int32 idx = 2;
+  int32 qty = 3;
+}
+
+message CardOwn {
+  int32 id = 1;
+  int32 n = 2;
+  int64 at = 3;
+}
+
+message CardGot {
+  int32 id = 1;
+  bool new = 2;
+  bool bonus = 3;
+}
+
+message CardPityRow {
+  string pool = 1;
+  int32 count = 2;
+}
+
+message CardPtRow {
+  string deck = 1;
+  int32 pt = 2;
+}
+
+message CardBook {
+  repeated CardOwn own = 1;
+  repeated CardPityRow pity = 2;
+  repeated CardPtRow fail_pt = 3;
+}
+
+message DiaShopRow {
+  int32 idx = 1;
+  string key = 2;
+  string tab = 3;
+  string id = 4;
+  int32 cnt = 5;
+  int64 dia = 6;
+  int32 limit = 7;
+  int32 bought = 8;
+  string reset = 9;
+  bool mark = 10;
+  bool hot = 11;
+  repeated int64 gold = 12;
+  bool acct = 13;
+}
+
+message DiaShopList {
+  repeated DiaShopRow rows = 1;
+  int64 dia = 2;
+  string log = 3;
+}
+
+message WhAct {
+  string op = 1;
+  string npc = 2;
+  int32 idx = 3;
+  int64 iid = 4;
+  int64 cnt = 5;
+  string id = 6;
+}
+
+message WhItemView {
+  int32 idx = 1;
+  string id = 2;
+  int32 cnt = 3;
+  int32 en = 4;
+  string bless = 5;
+  string anc = 6;
+  string attr = 7;
+  repeated ModView mods = 8;
+  int32 dur = 9;
+}
+
+message WhState {
+  repeated WhItemView items = 1;
+  int64 gold = 2;
+  int32 cap = 3;
+  int32 min_lv = 4;
+  string log = 5;
+}
+
+message ItemBookAct {
+  string op = 1;
+  int32 set_id = 2;
+  int32 slot = 3;
+  int32 idx = 4;
+  int64 iid = 5;
+}
+
+message ItemBookRow {
+  int32 set_id = 1;
+  repeated int32 slots = 2;
+}
+
+message ItemBookState {
+  repeated ItemBookRow rows = 1;
+  string log = 2;
+  string err = 3;
+}
+
+message CardDraw {
+  string pack = 1;
+  int32 draws = 2;
+  repeated CardGot got = 3;
+  repeated CardOwn own = 4;
+}
+
+message CardMergeResult {
+  string deck = 1;
+  bool ok = 2;
+  CardGot got = 3;
+  int32 fail_pt = 4;
+  repeated CardOwn own = 5;
+  string err = 6;
+  string kind = 7;
+  repeated CardGot gots = 8;
+  int32 ok_n = 9;
+  int32 fail_n = 10;
+  int64 gold = 11;
+  int32 back = 12;
+  repeated int32 backs = 13;
+}
+
+message BagSort {
+}
+
+message RepairItem {
+  int32 idx = 1;
+  string slot = 2;
+}
+
+message CastSkill {
+  string id = 1;
+  int32 target = 2;
+}
+
+message DiscardItem {
+  int32 idx = 1;
+  int32 cnt = 2;
+}
+
+message InvLock {
+  repeated int64 iids = 1;
+  bool lock = 2;
+}
+
+message DgBook {
+  string op = 1;
+  string map = 2;
+}
+
+message DgBookFloor {
+  string map = 1;
+  string name = 2;
+  string group = 3;
+  bool afk = 4;
+}
+
+message DgBookList {
+  repeated DgBookFloor floors = 1;
+  int64 fee = 2;
+}
+
+message DiscardJunk {
+  repeated int64 iids = 1;
+}
+
+message Equip {
+  int32 idx = 1;
+}
+
+message Unequip {
+  string slot = 1;
+}
+
+message EnhanceInv {
+  int32 idx = 1;
+  bool use_bless = 2;
+  bool use_cursed = 3;
+}
+
+message EnhanceBatch {
+  repeated int64 iids = 1;
+  int32 target = 2;
+  bool use_bless = 3;
+}
+
+message ServerMsg {
+  Marquee marquee = 2;
+  BookmarkList bookmark_list = 81;
+  StateFrame state = 6;
+  Fx fx = 7;
+  AuthResult auth_result = 8;
+  CharList char_list = 9;
+  EnterGame enter_game = 10;
+  ErrMsg err = 11;
+  ChatMsg chat = 12;
+  MailView mail = 17;
+  ShopItems shop_items = 18;
+  PartyState party = 24;
+  ServerFull server_full = 80;
+  ConnLimit conn_limit = 41;
+  Banned banned = 42;
+  Kicked kicked = 43;
+  IdleKick idle_kick = 44;
+  AfkReport afk_report = 45;
+  Bought bought = 48;
+  ElfEleOk elf_ele_ok = 52;
+  ClientVer client_ver = 58;
+  WorldSnap world_snap = 72;
+  WorldDelta world_delta = 73;
+  WorldInfo world_info = 74;
+  PetState pet_state = 78;
+  ClanState clan_state = 83;
+  QuestState quest_state = 84;
+  NpcHtml npc_html = 85;
+  NpcAmount npc_amount = 86;
+  NpcChat npc_chat = 87;
+  PetBag pet_bag = 82;
+  TradeAsk trade_ask = 75;
+  TradeState trade_state = 76;
+  PartyAsk party_ask = 79;
+  ExView ex_view = 88;
+  ExResult ex_result = 89;
+  CardBook card_book = 92;
+  DiaShopList dia_shop_list = 95;
+  WhState wh_state = 96;
+  ItemBookState item_book_state = 97;
+  DgBookList dg_book_list = 98;
+  FriendState friend_state = 120;
+  CardDraw card_draw = 93;
+  CardMergeResult card_merge_result = 94;
+  EnhanceBatchDone enhance_batch_done = 91;
+}
+
+message AfkDrop {
+  string id = 1;
+  int32 cnt = 2;
+  int32 en = 3;
+  string bless = 4;
+  string anc = 5;
+  string attr = 6;
+}
+
+message AfkReport {
+  string char_name = 1;
+  int64 dur_sec = 2;
+  int32 lv_from = 3;
+  int32 lv_to = 4;
+  int64 exp = 5;
+  int64 gold = 6;
+  int64 kills = 7;
+  string end_reason = 8;
+  repeated AfkDrop drops = 9;
+  int64 spent = 10;
+  double exp_pct = 11;
+}
+
+message ServerFull {
+  int32 cap = 1;
+}
+
+message ConnLimit {
+  int32 limit = 1;
+}
+
+message Banned {
+  string reason = 1;
+}
+
+message Kicked {
+  string reason = 1;
+}
+
+message IdleKick {
+}
+
+message PartyInvite {
+  string name = 1;
+}
+
+message PartyAnswer {
+  bool yes = 1;
+}
+
+message PartyLeave {
+}
+
+message PartyBan {
+  string name = 1;
+}
+
+message PartyAsk {
+  string from = 1;
+  int32 ttl_sec = 2;
+  string cancel = 3;
+}
+
+message PartyMember {
+  string name = 1;
+  int32 hp_pct = 2;
+  int32 lv = 3;
+  bool leader = 5;
+  int32 x = 6;
+  int32 y = 7;
+  bool in_view = 8;
+  int32 mp_pct = 9;
+  int32 poison = 10;
+  bool dead = 11;
+  string map = 12;
+}
+
+message PartyState {
+  bool has = 1;
+  string leader_name = 2;
+  int32 max = 3;
+  repeated PartyMember members = 4;
+}
+
+message ClanOpen {
+}
+
+message ClanCreate {
+  string name = 1;
+}
+
+message ClanApply {
+  int64 id = 1;
+}
+
+message ClanReview {
+  string name = 1;
+  bool yes = 2;
+}
+
+message ClanLeave {
+}
+
+message ClanKick {
+  string name = 1;
+}
+
+message ClanRank {
+  string name = 1;
+  int32 rank = 2;
+}
+
+message ClanEmblem {
+  int32 id = 1;
+}
+
+message CastleCmd {
+  string op = 1;
+  int32 castle = 2;
+  string npc = 3;
+  bool open = 4;
+  int64 n = 5;
+}
+
+message ClanTitle {
+  string name = 1;
+  string title = 2;
+  int32 color = 3;
+}
+
+message FriendOpen {
+}
+
+message FriendAdd {
+  string name = 1;
+}
+
+message FriendDel {
+  string name = 1;
+}
+
+message FriendEntry {
+  string name = 1;
+  int32 lv = 2;
+  string cls = 3;
+  bool online = 4;
+}
+
+message FriendState {
+  repeated FriendEntry list = 1;
+  int32 max = 2;
+}
+
+message QuestCmd {
+  string id = 1;
+  string op = 2;
+}
+
+message NpcTele {
+  string npc = 1;
+}
+
+message NpcTalk {
+  int32 ent = 1;
+  string npc = 2;
+}
+
+message NpcAction {
+  int32 ent = 1;
+  string npc = 2;
+  string action = 3;
+  int32 amount = 4;
+}
+
+message PickUp {
+  int32 ent = 1;
+}
+
+message NpcHtml {
+  int32 ent = 1;
+  string npc = 2;
+  string page = 3;
+  repeated string data = 4;
+}
+
+message NpcAmount {
+  int32 ent = 1;
+  string npc = 2;
+  string action = 3;
+  int32 max = 4;
+  string label = 5;
+}
+
+message NpcChat {
+  int32 ent = 1;
+  string text = 2;
+}
+
+message QuestState {
+  string id = 1;
+  int32 step = 2;
+  int32 need_lv = 3;
+  int32 lv = 4;
+  bool has_item = 5;
+  string item = 6;
+  string prize = 7;
+  string npc = 8;
+}
+
+message ClanMember {
+  string name = 1;
+  int32 lv = 2;
+  int32 rank = 3;
+  bool online = 4;
+  string title = 5;
+  int32 title_color = 6;
+  string cls = 7;
+}
+
+message ClanApp {
+  string name = 1;
+  int32 lv = 2;
+  string cls = 3;
+}
+
+message ClanCard {
+  int64 id = 1;
+  string name = 2;
+  int32 emblem = 3;
+  string leader = 4;
+  int32 cnt = 5;
+  int32 cap = 6;
+  bool applied = 7;
+}
+
+message ClanState {
+  bool has = 1;
+  int64 id = 2;
+  string name = 3;
+  int32 emblem = 4;
+  string leader = 5;
+  int32 cnt = 6;
+  int32 cap = 7;
+  int32 my_rank = 8;
+  repeated ClanMember members = 9;
+  repeated ClanApp apps = 10;
+  int32 emblem_cd_sec = 11;
+  bool can_create = 12;
+  repeated ClanCard clans = 13;
+  int32 emblem_max = 14;
+  string my_title = 15;
+  int32 my_title_color = 16;
+}
+
+message ShopItem {
+  string id = 1;
+  bool learned = 8;
+  int32 req_lv = 9;
+  bool has_req_lv = 10;
+  string req_ele = 12;
+  bool ele_ok = 13;
+  int32 sale_price = 14;
+  bool mark = 15;
+  int32 day_limit = 16;
+  int32 day_left = 17;
+}
+
+message ShopItems {
+  string npc_id = 1;
+  repeated ShopItem items = 2;
+}
+
+message TradeReq {
+  string name = 1;
+}
+
+message TradeAnswer {
+  bool yes = 1;
+}
+
+message TradeAdd {
+  int32 inv_index = 1;
+  int32 cnt = 2;
+}
+
+message TradeOk {
+}
+
+message TradeGold {
+  int64 amount = 1;
+}
+
+message TradeCancel {
+}
+
+message TradeAsk {
+  string from = 1;
+  int32 ttl_sec = 2;
+  string cancel = 3;
+}
+
+message TradeItemView {
+  string id = 1;
+  int32 cnt = 2;
+  int32 en = 3;
+  string bless = 4;
+  string anc = 5;
+  string attr = 6;
+  repeated ModView mods = 7;
+  int32 inv_index = 8;
+  string pet = 9;
+}
+
+message TradeState {
+  string partner = 1;
+  repeated TradeItemView mine = 2;
+  repeated TradeItemView theirs = 3;
+  bool my_ok = 4;
+  bool their_ok = 5;
+  string status = 6;
+  string msg = 7;
+  int64 my_gold = 8;
+  int64 their_gold = 9;
+}
+
+message MailItem {
+  int64 id = 1;
+  string kind = 2;
+  string n = 3;
+  string icon = 4;
+  int32 cnt = 5;
+  int64 gold = 6;
+  string buyer = 7;
+  int32 en = 8;
+  string bless = 9;
+  string anc = 10;
+  string attr = 11;
+  repeated ModView mods = 12;
+  string item_id = 13;
+  string src = 14;
+  bool mark = 15;
+}
+
+message MailView {
+  repeated MailItem items = 1;
+}
+
+message ErrMsg {
+  string text = 1;
+}
+
+message ChatMsg {
+  string time = 1;
+  string user = 2;
+  string text = 3;
+  string chan = 4;
+  string html = 5;
+  EqItemView eq = 6;
+  string to = 7;
+  string kind = 8;
+}
+
+message Bought {
+  string id = 1;
+  bool skill = 2;
+}
+
+message ElfEleOk {
+  string ele = 1;
+}
+
+message ClientVer {
+  string v = 1;
+}
+
+message AuthResult {
+  bool ok = 1;
+  string reason = 2;
+  string username = 3;
+  string conn_id = 4;
+  bool resumed = 5;
+}
+
+message CharInfo {
+  int32 ci = 1;
+  string name = 2;
+  string cls = 3;
+  int32 level = 4;
+  string portrait = 5;
+  int32 str = 6;
+  int32 dex = 7;
+  int32 con = 8;
+  int32 int = 9;
+  int32 wis = 10;
+  int32 cha = 11;
+}
+
+message CharList {
+  repeated CharInfo chars = 1;
+}
+
+message EnterGame {
+}
+
+message Fx {
+  string kind = 1;
+  int32 dmg = 2;
+  int32 idx = 4;
+  string text = 5;
+}
+
+message StateFrame {
+  int32 hp = 5;
+  int32 max_hp = 6;
+  int32 mp = 7;
+  int32 max_mp = 8;
+  int32 level = 9;
+  double exp = 10;
+  double exp_need = 11;
+  double gold = 12;
+  int64 ts = 15;
+  bool full = 17;
+  repeated InvItemView inv = 18;
+  repeated EqSlotView eq = 19;
+  string poly_n = 20;
+  string poly_c = 21;
+  repeated SkillView skills = 23;
+  bytes auto_json = 25;
+  CharStats stats = 27;
+  repeated BuffView buffs = 30;
+  repeated SkillBookView skill_book = 35;
+  string p_status = 40;
+  int32 align = 42;
+  string hotkeys = 48;
+  int64 dia = 50;
+  int32 ex_badge = 49;
+  AutoStat auto_stat = 51;
+}
+
+message AutoStat {
+  int64 dur_sec = 1;
+  int64 gold = 2;
+  int64 spent = 3;
+  int64 exp = 4;
+  double exp_pct = 5;
+  int64 kills = 6;
+}
+
+message SkillBookView {
+  string id = 1;
+  string n = 2;
+  string type = 3;
+  int32 mp = 4;
+  int32 tier = 5;
+  int32 req_lv = 6;
+  bool ex = 7;
+  bool learned = 8;
+}
+
+message BuffView {
+  string n = 1;
+  string icon = 2;
+  int32 cnt = 3;
+  int32 lv = 4;
+  int32 remain_ms = 5;
+}
+
+message CharStats {
+  message OwnEntry {
+    string key = 1;
+    int32 value = 2;
+  }
+
+  double exp_to_next = 1;
+  int32 max_hp = 3;
+  int32 max_mp = 4;
+  int32 str = 5;
+  int32 dex = 6;
+  int32 con = 7;
+  int32 int = 8;
+  int32 wis = 9;
+  int32 cha = 10;
+  int32 bonus = 11;
+  string elf_ele = 12;
+  repeated OwnEntry own = 13;
+  int32 panacea_used = 14;
+  int32 ac = 16;
+  int32 mr = 17;
+  int32 er = 18;
+  int32 dr = 19;
+  int32 res_fire = 37;
+  int32 res_water = 38;
+  int32 res_wind = 39;
+  int32 res_earth = 40;
+  string raw_cls = 41;
+  string cls = 42;
+  int32 magic_bonus = 45;
+  int32 sp = 46;
+  int64 mc_remain_ms = 47;
+  int64 fc_remain_ms = 48;
+  int32 hit_melee = 49;
+  int32 dmg_melee = 50;
+  int32 hit_ranged = 51;
+  int32 dmg_ranged = 52;
+  int32 regen_hp = 53;
+  int32 regen_mp = 54;
+  int32 mag_dmg = 55;
+  int32 mag_hit = 56;
+  int32 exp_pct = 57;
+}
+
+message SkillView {
+  string id = 1;
+  string n = 2;
+  int32 mp = 3;
+  string type = 4;
+  bool summon = 7;
+  bool convert = 8;
+  bool drain = 9;
+  int32 hp_cost = 10;
+  int32 mp_gain = 11;
+  string req_ele = 12;
+  bool req_ele_any = 13;
+  bool aoe = 14;
+  bool auto_atk = 15;
+}
+
+message ModView {
+  string n = 1;
+  int32 v = 2;
+  int32 t = 3;
+}
+
+message EqItemView {
+  string id = 1;
+  int32 en = 5;
+  string bless = 6;
+  string anc = 10;
+  string attr = 11;
+  repeated ModView mods = 12;
+  int32 dur = 13;
+}
+
+message EqSlotView {
+  string slot = 1;
+  EqItemView item = 3;
+}
+
+message InvItemView {
+  string id = 1;
+  int32 cnt = 3;
+  int32 en = 4;
+  string bless = 7;
+  string anc = 12;
+  string attr = 13;
+  repeated ModView mods = 14;
+  bool tradable = 15;
+  int32 dur = 16;
+  int64 iid = 17;
+  string pet = 18;
+  bool mark = 19;
+  int32 sell_price = 21;
+  bool ex_no = 20;
+  bool locked = 23;
+  bool wh_no = 22;
+}
+
+message Marquee {
+  string text = 1;
+  int64 ts = 2;
+  int32 style = 3;
+  bool urgent = 4;
+}
+
+message WPt {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message WorldEnter {
+  string map = 1;
+  int32 line = 2;
+}
+
+message WorldStep {
+  int32 gx = 1;
+  int32 gy = 2;
+  int32 dx = 3;
+  int32 dy = 4;
+  int32 src = 5;
+}
+
+message WorldHome {
+}
+
+message WorldRestart {
+}
+
+message WorldPk {
+  bool on = 1;
+}
+
+message Hotkeys {
+  string layout = 1;
+}
+
+message Bookmark {
+  string op = 1;
+  string name = 2;
+}
+
+message BookmarkItem {
+  string name = 1;
+  string map = 2;
+  int32 x = 3;
+  int32 y = 4;
+}
+
+message BookmarkList {
+  repeated BookmarkItem items = 1;
+  string mode = 2;
+  int32 max = 3;
+}
+
+message WorldLeave {
+}
+
+message WorldLook {
+  int32 id = 1;
+}
+
+message WorldAttack {
+  int32 id = 1;
+}
+
+message WorldSwing {
+  int32 id = 1;
+}
+
+message PetCmd {
+  string uid = 1;
+  string cmd = 2;
+  string name = 3;
+}
+
+message PetOut {
+  string uid = 1;
+  string name = 2;
+  string npc = 3;
+  int32 lv = 4;
+  int32 hp = 5;
+  int32 max_hp = 6;
+  int32 mp = 7;
+  int32 max_mp = 8;
+  int64 exp = 9;
+  int64 exp_need = 10;
+  int32 mode = 11;
+  int32 ent_id = 12;
+  string kind = 13;
+  int32 left_sec = 14;
+}
+
+message PetState {
+  repeated PetOut pets = 1;
+}
+
+message PetBag {
+  repeated PetOut pets = 1;
+}
+
+message WEnt {
+  int32 id = 1;
+  string name = 2;
+  string cls = 3;
+  string portrait = 4;
+  int32 lv = 5;
+  int32 x = 6;
+  int32 y = 7;
+  int32 rel = 8;
+  repeated WPt path = 9;
+  int32 align = 10;
+  string wcat = 11;
+  string kind = 12;
+  string mob = 13;
+  int32 hp = 14;
+  int32 max_hp = 15;
+  int32 spd = 16;
+  string owner = 17;
+  int32 owner_id = 18;
+  bool dead = 19;
+  string poly = 20;
+  int32 pink = 21;
+  string clan = 23;
+  int32 emblem = 24;
+  string title = 25;
+  int32 castle = 27;
+  int32 title_color = 26;
+  int32 dir = 22;
+  string item = 28;
+  int32 cnt = 29;
+  int32 poison = 30;
+  int32 act = 31;
+  bool newbie = 32;
+}
+
+message WorldSnap {
+  string map = 1;
+  int32 w = 2;
+  int32 h = 3;
+  int32 cell = 4;
+  int32 cols = 5;
+  int32 rows = 6;
+  bytes grid = 7;
+  int32 me = 8;
+  int32 line = 9;
+  int32 lines = 10;
+  string name_mode = 11;
+  int32 x = 12;
+  int32 y = 13;
+  int32 speed = 14;
+  int32 vis_n = 15;
+}
+
+message WMove {
+  int32 id = 1;
+  repeated WPt path = 2;
+}
+
+message WorldDelta {
+  repeated WEnt add = 1;
+  repeated int32 gone = 2;
+  repeated WMove mv = 3;
+  int32 line_n = 4;
+  repeated WFx fx = 5;
+  repeated WHp hp = 6;
+  repeated WSpd spd = 7;
+  repeated WPink pink = 8;
+  repeated WPoison poison = 9;
+}
+
+message WFx {
+  int32 src = 1;
+  int32 dst = 2;
+  string k = 3;
+  int32 dmg = 4;
+  bool miss = 5;
+  string sk = 7;
+  int32 cfx = 8;
+}
+
+message WHp {
+  int32 id = 1;
+  int32 hp = 2;
+  int32 max_hp = 3;
+}
+
+message WSpd {
+  int32 id = 1;
+  int32 pct = 2;
+  int32 act = 3;
+}
+
+message WPink {
+  int32 id = 1;
+  int32 sec = 2;
+}
+
+message WPoison {
+  int32 id = 1;
+  int32 stage = 2;
+}
+
+message WorldInfo {
+  int32 id = 1;
+  string name = 2;
+  int32 lv = 3;
+  string cls = 4;
+  int32 align = 6;
+  string party = 7;
+}
+
+message ExQuery {
+  uint32 seq = 1;
+  ExQKinds kinds = 2;
+  ExQListings listings = 3;
+  ExQQuote quote = 4;
+  ExQMine mine = 5;
+  ExQSettle settle = 6;
+  ExQHistory history = 7;
+}
+
+message ExQKinds {
+  int32 cat = 1;
+  string kw = 2;
+  int32 page = 3;
+}
+
+message ExQListings {
+  string item = 1;
+  int32 sort = 2;
+  int32 page = 3;
+}
+
+message ExQQuote {
+  string item = 1;
+}
+
+message ExQMine {
+}
+
+message ExQSettle {
+  int32 page = 1;
+}
+
+message ExQHistory {
+  int32 page = 1;
+}
+
+message ExAct {
+  uint32 seq = 1;
+  ExList list = 2;
+  ExCancel cancel = 3;
+  ExRelist relist = 4;
+  ExBuy buy = 5;
+  ExClaim claim = 6;
+}
+
+message ExList {
+  int64 iid = 1;
+  int32 cnt = 2;
+  int64 unit = 3;
+}
+
+message ExCancel {
+  int64 lid = 1;
+}
+
+message ExRelist {
+  int64 lid = 1;
+}
+
+message ExBuy {
+  int64 lid = 1;
+  int32 cnt = 2;
+  int64 unit = 3;
+}
+
+message ExClaim {
+  int64 sid = 1;
+}
+
+message ExView {
+  uint32 seq = 1;
+  int64 now = 2;
+  int32 page = 3;
+  int32 pages = 4;
+  int32 total = 5;
+  bool open = 6;
+  ExKinds kinds = 10;
+  ExListings listings = 11;
+  ExQuote quote = 12;
+  ExMine mine = 13;
+  ExSettle settle = 14;
+  ExHistory history = 15;
+}
+
+message ExKindRow {
+  string item = 1;
+  int32 lots = 2;
+  int64 qty = 3;
+  int64 low = 4;
+}
+
+message ExKinds {
+  int32 cat = 1;
+  string kw = 2;
+  repeated ExKindRow rows = 3;
+}
+
+message ExEnLow {
+  int32 en = 1;
+  int64 low = 2;
+  int32 lots = 3;
+}
+
+message ExLot {
+  int64 lid = 1;
+  int32 en = 2;
+  int32 cnt = 3;
+  int64 unit = 4;
+  int32 left_min = 5;
+  bool mine = 6;
+}
+
+message ExListings {
+  string item = 1;
+  int32 sort = 2;
+  int64 qty = 3;
+  repeated ExEnLow lows = 4;
+  repeated ExLot rows = 5;
+}
+
+message ExQuote {
+  string item = 1;
+  repeated ExEnLow lows = 2;
+}
+
+message ExRules {
+  int32 lv = 1;
+  int32 slots = 2;
+  int32 fee_bp = 3;
+  int64 max_price = 4;
+  int64 min_total = 5;
+  int32 max_qty = 6;
+  int32 review_sec = 7;
+  int32 ttl_sec = 8;
+  int64 min_unit = 9;
+}
+
+message ExMyLot {
+  int64 lid = 1;
+  string item = 2;
+  int32 en = 3;
+  int32 cnt = 4;
+  int32 cnt0 = 5;
+  int64 unit = 6;
+  int32 state = 7;
+  int32 left_sec = 8;
+}
+
+message ExMine {
+  int32 used = 1;
+  ExRules rules = 2;
+  repeated ExMyLot rows = 3;
+}
+
+message ExSettleRow {
+  int64 sid = 1;
+  int32 kind = 2;
+  string item = 3;
+  int32 en = 4;
+  int32 cnt = 5;
+  int64 gross = 6;
+  int64 fee = 7;
+  int64 net = 8;
+  int64 ts = 9;
+}
+
+message ExSettle {
+  int64 gold = 1;
+  int32 items = 2;
+  repeated ExSettleRow rows = 3;
+}
+
+message ExHistRow {
+  int64 ts = 1;
+  int32 side = 2;
+  string item = 3;
+  int32 en = 4;
+  int32 cnt = 5;
+  int64 unit = 6;
+  int64 gross = 7;
+  int64 fee = 8;
+}
+
+message ExHistory {
+  repeated ExHistRow rows = 1;
+}
+
+message EnhanceBatchDone {
+  int32 rolled = 1;
+  int32 ok = 2;
+  int32 destroyed = 3;
+  int32 used = 4;
+  bool scroll_out = 5;
+  bool all_done = 6;
+  repeated int64 iids = 7;
+}
+
+message ExResult {
+  uint32 seq = 1;
+  string op = 2;
+  string code = 3;
+  int64 lid = 4;
+  int32 left = 5;
+  int32 cnt = 6;
+  int64 gold = 7;
+}

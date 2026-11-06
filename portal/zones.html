@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>獵場列表|小樹放置天堂</title>
+<meta name="description" content="小樹放置天堂目前開放的野外與地監，每一區的怪物與掉落道具。">
+<meta name="theme-color" content="#0d0a06">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d0a06'/%3E%3Ccircle cx='32' cy='26' r='17' fill='%23c9a24a'/%3E%3Crect x='28' y='38' width='8' height='18' rx='3' fill='%238a5a34'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="orn" viewBox="0 0 220 14"><path d="M0 7h92M128 7h92" stroke="#b98d3e" stroke-width="1"/><path d="M110 1l6 6-6 6-6-6z" fill="none" stroke="#e6c278" stroke-width="1.2"/><circle cx="96" cy="7" r="1.6" fill="#b98d3e"/><circle cx="124" cy="7" r="1.6" fill="#b98d3e"/></symbol>
+  </defs>
+</svg>
+
+<nav class="nav" id="nav"></nav>
+<script src="nav.js"></script>
+
+<header class="page-hero">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="en">HUNTING GROUNDS</div>
+      <h1>獵場列表</h1>
+      <svg class="orn"><use href="#orn"/></svg>
+      <p>目前開放的野外與地監，每一區的怪物與掉落道具一次看完</p>
+    </div>
+    <div class="subtabs"><a href="zones.html" class="on">獵場列表</a><a href="monsters.html">怪物掉落</a></div>
+  </div>
+</header>
+
+<main class="data-sec">
+  <div class="wrap">
+    <div class="toolbar">
+      <label class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <input id="q" type="search" placeholder="搜尋獵場、怪物或道具名(例:精靈玉)" autocomplete="off">
+      </label>
+      <div class="chips" id="chips"></div>
+    </div>
+    <p class="result-note" id="note"></p>
+    <div id="list"></div>
+    <div class="data-note" id="foot"></div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap"><span class="brand">小樹放置天堂</span>© 2026 小樹放置天堂 版權所有</div>
+</footer>
+
+<script src="data/wiki.js"></script>
+<script>
+(function () {
+  var W = window.WIKI;
+  var list = document.getElementById('list');
+  if (!W) { list.innerHTML = '<p class="empty">資料載入失敗，請重新整理頁面。</p>'; return; }
+  var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
+  var GROUPS = ['說話之島', '大陸野外', '地監'];
+  var FILTERS = [['all', '全部']].concat(GROUPS.map(function (g) { return [g, g]; })).concat([['afk', '放置獵場'], ['boss', '有 BOSS'], ['soon', '即將開放']]);
+  var CLOSED = W.closed || [];
+  var HUNTS = W.hunts || []; // 💤 放置獵場(每人一份、不會被打;麥哥 10/23 起野外/地監也能離線掛機)
+  var MOON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+  var LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><circle cx="12" cy="16" r="1.2"/></svg>';
+  var state = { f: 'all', q: '' };
+
+  var chips = document.getElementById('chips');
+  chips.innerHTML = FILTERS.map(function (f) { return '<button class="chip" data-f="' + f[0] + '">' + f[1] + '</button>'; }).join('');
+  chips.addEventListener('click', function (e) {
+    var b = e.target.closest('.chip'); if (!b) return;
+    state.f = b.dataset.f; render();
+  });
+  var q = document.getElementById('q');
+  q.addEventListener('input', function () { state.q = q.value.trim(); render(); });
+
+  function hasBoss(z) { return z.m.some(function (n) { return W.mobs[n] && W.mobs[n].boss; }); }
+
+  // 麥哥 10/22:「狩獵區 怪物名稱 掉落道具 不要點進去才看的到 都直接列出來」⇒ 每隻怪一列:名稱/等級 | 掉落道具
+  function mobMatch(n) {
+    var m = W.mobs[n];
+    return n.indexOf(state.q) >= 0 || m.d.some(function (d) { return d.indexOf(state.q) >= 0; });
+  }
+  function card(z) {
+    // 搜尋字不是獵場名 ⇒ 只留有關的怪(怪名或掉落含搜尋字),並把命中的字標亮
+    var narrow = state.q && z.n.indexOf(state.q) < 0;
+    var rows = z.m.filter(function (n) { return !narrow || mobMatch(n); }).map(function (n) {
+      var m = W.mobs[n];
+      var drops = m.d.length ? m.d.map(function (d) {
+        return '<span class="tag' + (narrow && d.indexOf(state.q) >= 0 ? ' mark' : '') + '">' + esc(d) + '</span>';
+      }).join('') : '<span class="none">無掉落道具</span>';
+      return '<div class="mrow"><div class="mname"><a href="monsters.html#m=' + encodeURIComponent(n) + '"' + (narrow && n.indexOf(state.q) >= 0 ? ' class="mark"' : '') + '>' + esc(n) + '</a>' +
+        '<span class="lv">Lv ' + esc(m.lvs) + '</span>' + (m.boss ? '<span class="boss-badge">BOSS</span>' : '') + '</div>' +
+        '<div class="tags">' + drops + '</div></div>';
+    }).join('');
+    var here = HUNTS.filter(function (h) { return h.at === z.id; });
+    return '<div class="dcard zone" id="z-' + esc(z.id) + '">' +
+      '<h3>' + esc(z.n) + ' <span class="grp-badge">' + esc(z.g) + '</span>' + (z.afk ? ' <span class="afk-badge">' + MOON_SVG + '放置獵場</span>' : '') + (hasBoss(z) ? ' <span class="boss-badge">BOSS</span>' : '') + '</h3>' +
+      '<div class="meta">怪物等級 <b>' + (z.lo === z.hi ? z.lo : z.lo + '~' + z.hi) + '</b>・' + z.m.length + ' 種怪物</div>' +
+      (here.length ? '<div class="znote afk">這區的「傳送師(放置獵場)」可以進入放置獵場:<b>' + here.map(function (h) { return esc(h.n); }).join('、') + '</b>,在裡面開著 AUTO 下線就會繼續掛機。</div>' : '') +
+      (z.note ? '<div class="znote">' + esc(z.note) + '</div>' : '') +
+      '<div class="mhead"><span>怪物</span><span>掉落道具</span></div>' + rows + '</div>';
+  }
+
+  // 🔒 還沒開放的區域(麥哥 10/22「讓玩家有期待感」):只有名稱與層數,怪物一律「？？？」
+  function soonCard(c) {
+    var sub = c.g + (c.f > 1 ? '・共 ' + c.f + ' 層' : '');
+    var big = c.f >= 50; // 百層高塔=壓軸大卡,橫跨整排
+    return '<div class="soon-card' + (big ? ' big' : '') + '">' + LOCK_SVG +
+      (big ? '<div class="soon-kicker">終極挑戰</div>' : '') +
+      '<div class="soon-n">' + esc(c.n) + '</div>' +
+      '<div class="soon-sub">' + esc(sub) + '</div>' +
+      '<div class="soon-q">出沒怪物 <b>？？？</b></div>' +
+      '<div class="soon-tag">陸續開放・敬請期待</div></div>';
+  }
+  // 💤 放置獵場一覽(「可離線掛機」篩選時顯示;「全部」時頂端放一條提示帶)
+  var AFK_RULES = '<ul class="afk-rules">' +
+    '<li>在<b>野外、地監、放置獵場</b>開著 AUTO 直接下線,角色都會留在原地繼續打怪,最長 <b>12 小時</b>;下次登入會看到掛機報告。野外、地監要有<b>離線掛機月卡</b>;放置獵場超過 10 級要有。</li>' +
+    '<li>野外和地監的離線角色<b>別人看得到、也打得到</b>;被打死會扣經驗(不噴裝)、掛機結束。殺死離線角色一樣算 PK。</li>' +
+    '<li><b>放置獵場</b>是每人一份的獨立獵場,只有你自己,不會被搶怪、也不能 PK,掛機最安全。一個帳號同一時間只有一隻角色能離線掛機。</li>' +
+    '<li>入口:到各區的「<b>傳送師(放置獵場)</b>」對話進入。說話之島村莊那位可以進「新手獵場」「北島獵場」。</li></ul>';
+  function huntRow(h) {
+    var hit = function (s) { return state.q && s.indexOf(state.q) >= 0; };
+    return '<div class="hrow"><div class="hn"><b' + (hit(h.n) ? ' class="mark"' : '') + '>' + esc(h.n) + '</b>' +
+      '<a class="tag" href="#z=' + encodeURIComponent(h.at) + '">' + (h.atN === h.n ? '入口就在這一層' : '入口:' + esc(h.atN)) + '</a></div>' +
+      '<div class="hlv">Lv ' + (h.lo === h.hi ? h.lo : h.lo + '~' + h.hi) + '</div>' +
+      '<div class="tags">' + h.m.map(function (n) { return '<a class="tag' + (hit(n) ? ' mark' : '') + '" href="monsters.html#m=' + encodeURIComponent(n) + '">' + esc(n) + '</a>'; }).join('') + '</div></div>';
+  }
+  function huntsHtml() {
+    if (!HUNTS.length) return '';
+    if (state.f === 'all' && !state.q) {
+      return '<button class="afk-banner" id="afkGo">' + MOON_SVG + '<span><b>野外、地監都能離線掛機;想安心掛機請到放置獵場(共 ' + HUNTS.length + ' 個)</b>開著 AUTO 下線,角色會繼續打怪最長 12 小時;放置獵場裡不會被其他玩家攻擊。</span><em>查看一覽 ›</em></button>';
+    }
+    if (state.f !== 'afk') return '';
+    var hs = HUNTS.filter(function (h) { return !state.q || h.n.indexOf(state.q) >= 0 || h.atN.indexOf(state.q) >= 0 || h.m.some(function (n) { return n.indexOf(state.q) >= 0; }); });
+    return '<div class="group-hd">放置獵場一覽 <small>' + hs.length + ' 個・依怪物等級排列</small></div>' + AFK_RULES +
+      (hs.length ? '<div class="hunts"><div class="hhead"><span>放置獵場 / 入口</span><span>怪物等級</span><span>出沒怪物</span></div>' + hs.map(huntRow).join('') + '</div>' : '<p class="empty">找不到符合的放置獵場</p>') +
+      '<div class="group-hd">有放置獵場的區域 <small>點上面的「入口」可以跳到該區</small></div>';
+  }
+
+  function soonHtml() {
+    var cs = CLOSED.filter(function (c) {
+      if (state.f === 'boss' || state.f === 'afk') return false;
+      if (state.f !== 'all' && state.f !== 'soon' && !(state.f === '地監' && c.g !== '大陸野外') && c.g !== state.f) return false;
+      return !state.q || c.n.indexOf(state.q) >= 0;
+    });
+    if (!cs.length) return '';
+    return '<div class="group-hd soon-hd">即將開放 <small>' + cs.length + ' 區・更多冒險之地正在準備中</small></div>' +
+      '<p class="soon-lead">傳說中的高塔、沉睡的古老地監、海上的神祕島嶼……這些地方的大門還緊閉著。敬請期待它們開放的那一天。</p>' +
+      '<div class="soon-grid">' + cs.map(soonCard).join('') + '</div>';
+  }
+
+  function render() {
+    chips.querySelectorAll('.chip').forEach(function (b) { b.classList.toggle('on', b.dataset.f === state.f); });
+    var zs = state.f === 'soon' ? [] : W.zones.filter(function (z) {
+      if (state.f === 'boss' ? !hasBoss(z) : state.f === 'afk' ? !z.afk : (state.f !== 'all' && z.g !== state.f)) return false;
+      if (!state.q) return true;
+      return z.n.indexOf(state.q) >= 0 || z.m.some(mobMatch);
+    });
+    var soon = soonHtml(), hunts = huntsHtml();
+    document.getElementById('note').textContent = state.f === 'soon' ? '以下區域陸續開放，敬請期待'
+      : state.f === 'afk' ? '共 ' + HUNTS.length + ' 個放置獵場,分布在 ' + W.zones.filter(function (z) { return z.afk; }).length + ' 個區域'
+      : '找到 ' + zs.length + ' 個獵場' + (state.q ? '(含「' + state.q + '」)' : '');
+    if (!zs.length && !soon && !hunts) { list.innerHTML = '<p class="empty">找不到符合的獵場</p>'; return; }
+    list.innerHTML = hunts + GROUPS.map(function (g) {
+      var part = zs.filter(function (z) { return z.g === g; });
+      if (!part.length) return '';
+      return '<div class="group-hd">' + g + ' <small>' + part.length + ' 區</small></div><div class="cards one">' + part.map(card).join('') + '</div>';
+    }).join('') + soon;
+    var go = document.getElementById('afkGo');
+    if (go) go.addEventListener('click', function () { state.f = 'afk'; render(); window.scrollTo({ top: chips.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' }); });
+  }
+
+  document.getElementById('foot').innerHTML = '資料更新於 ' + esc(W.at) + '。「即將開放」的區域開放後，會在這裡補上怪物與掉落。<br>同一區的怪物依等級由低到高排列；掉落道具只列出「會掉什麼」，掉落機率不公開。點怪物名可以看牠的 HP、AC、經驗與其他出沒地點。';
+  render();
+
+  // 從怪物頁點「出沒地點」過來:#z=獵場代號 → 捲到那張卡並標亮
+  function fromHash() {
+    var m = location.hash.match(/^#z=(.+)$/);
+    if (!m) return;
+    state.f = 'all'; state.q = ''; q.value = ''; render();
+    var el = document.getElementById('z-' + decodeURIComponent(m[1]));
+    if (el) { el.classList.add('hit'); el.scrollIntoView({ block: 'center' }); }
+  }
+  window.addEventListener('hashchange', fromHash);
+  fromHash();
+})();
+</script>
+</body>
+</html>

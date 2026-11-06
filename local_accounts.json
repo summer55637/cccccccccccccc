@@ -1,0 +1,194 @@
+{
+  "accounts": {
+    "123456": {
+      "username": "123456",
+      "password": "123456",
+      "chars": [
+        {
+          "ci": 0,
+          "name": "死亡騎士",
+          "cls": "knight",
+          "level": 1,
+          "portrait": "knight",
+          "str": 4,
+          "dex": 12,
+          "con": 14,
+          "int": 10,
+          "wis": 10,
+          "cha": 10,
+          "hp": 100,
+          "maxHp": 100,
+          "mp": 50,
+          "maxMp": 50,
+          "gold": 10000,
+          "exp": 0,
+          "expNeed": 100
+        }
+      ],
+      "createdAt": 1793268945118
+    },
+    "hero_3116": {
+      "username": "hero_3116",
+      "password": "password123",
+      "chars": [
+        {
+          "ci": 0,
+          "name": "小樹騎士",
+          "cls": "knight",
+          "level": 1,
+          "portrait": "knight",
+          "str": 18,
+          "dex": 12,
+          "con": 14,
+          "int": 10,
+          "wis": 10,
+          "cha": 10,
+          "hp": 100,
+          "maxHp": 100,
+          "mp": 50,
+          "maxMp": 50,
+          "gold": 10000,
+          "exp": 0,
+          "expNeed": 100
+        }
+      ],
+      "createdAt": 1793262943126
+    },
+    "testplayer_3787": {
+      "username": "testplayer_3787",
+      "password": "password123",
+      "chars": [],
+      "createdAt": 1793268018415
+    },
+    "autouser1": {
+      "username": "autouser1",
+      "password": "autopass123",
+      "chars": [],
+      "createdAt": 1793268049192
+    },
+    "hero58557": {
+      "username": "hero58557",
+      "password": "pwd95246",
+      "chars": [],
+      "createdAt": 1793268279951
+    },
+    "hero23181": {
+      "username": "hero23181",
+      "password": "pwd83149",
+      "chars": [],
+      "createdAt": 1793268325893
+    },
+    "user87333": {
+      "username": "user87333",
+      "password": "pass90657",
+      "chars": [],
+      "createdAt": 1793268358111
+    },
+    "hero50499": {
+      "username": "hero50499",
+      "password": "pwd20999",
+      "chars": [
+        {
+          "ci": 0,
+          "name": "小樹騎士",
+          "cls": "knight",
+          "level": 1,
+          "portrait": "knight",
+          "str": 18,
+          "dex": 12,
+          "con": 14,
+          "int": 10,
+          "wis": 10,
+          "cha": 10,
+          "hp": 100,
+          "maxHp": 100,
+          "mp": 50,
+          "maxMp": 50,
+          "gold": 10000,
+          "exp": 0,
+          "expNeed": 100
+        }
+      ],
+      "createdAt": 1793268393353
+    },
+    "hero15006": {
+      "username": "hero15006",
+      "password": "pwd77863",
+      "chars": [],
+      "createdAt": 1793269131394
+    },
+    "hero10824": {
+      "username": "hero10824",
+      "password": "pwd66974",
+      "chars": [],
+      "createdAt": 1793269238327
+    },
+    "player999": {
+      "username": "player999",
+      "password": "123456",
+      "chars": [],
+      "createdAt": 1793271029307
+    },
+    "player_1959": {
+      "username": "player_1959",
+      "password": "password123",
+      "chars": [
+        {
+          "ci": 0,
+          "name": "小樹冒險者",
+          "cls": "knight",
+          "level": 1,
+          "portrait": "knight",
+          "str": 18,
+          "dex": 12,
+          "con": 14,
+          "int": 10,
+          "wis": 10,
+          "cha": 10,
+          "hp": 100,
+          "maxHp": 100,
+          "mp": 50,
+          "maxMp": 50,
+          "gold": 10000,
+          "exp": 0,
+          "expNeed": 100
+        }
+      ],
+      "createdAt": 1793271181984
+    }
+  },
+  "tokens": {
+    "tk_hero_3116_mvtageja": "hero_3116",
+    "tk_testplayer_3787_mvtdh6nj": "testplayer_3787",
+    "tk_testplayer_3787_mvtdh6nu": "testplayer_3787",
+    "tk_autouser1_mvtdhueg": "autouser1",
+    "tk_hero58557_mvtdmsgf": "hero58557",
+    "tk_hero58557_mvtdmsgq": "hero58557",
+    "tk_hero23181_mvtdnrwk": "hero23181",
+    "tk_hero23181_mvtdnrwx": "hero23181",
+    "tk_user87333_mvtdogrj": "user87333",
+    "tk_user87333_mvtdogrv": "user87333",
+    "tk_hero50499_mvtdp7yh": "hero50499",
+    "tk_hero50499_mvtdp7yq": "hero50499",
+    "tk_123456_mvte11pa": "123456",
+    "tk_123456_mvte11pq": "123456",
+    "tk_123456_mvte3ujf": "123456",
+    "tk_hero15006_mvte51fm": "hero15006",
+    "tk_hero15006_mvte51fy": "hero15006",
+    "tk_hero10824_mvte7bxz": "hero10824",
+    "tk_hero10824_mvte7bz3": "hero10824",
+    "tk_123456_mvte9fhh": "123456",
+    "tk_123456_mvtelmnf": "123456",
+    "tk_123456_mvtembwd": "123456",
+    "tk_123456_mvtexl26": "123456",
+    "tk_123456_mvtezb0a": "123456",
+    "tk_123456_mvtf2ecb": "123456",
+    "tk_123456_mvtf6xmp": "123456",
+    "tk_123456_mvtf88qx": "123456",
+    "tk_player999_mvtf9pvf": "player999",
+    "tk_player_1959_mvtfczog": "player_1959",
+    "tk_player_1959_mvtfczok": "player_1959",
+    "tk_123456_mvtffcim": "123456",
+    "tk_123456_mw2v585v": "123456"
+  }
+}
