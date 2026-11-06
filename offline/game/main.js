@@ -237,7 +237,7 @@ function createInventoryAction(label, action, itemId) {
   return button;
 }
 function inventoryItemName(itemId) {
-  return ITEM_DEFINITIONS[itemId]?.name || itemId;
+  return Object.hasOwn(ITEM_DEFINITIONS, itemId) ? ITEM_DEFINITIONS[itemId].name : itemId;
 }
 function renderInventory(save) {
   if (!save || !elements.inventoryList) return;
@@ -246,11 +246,13 @@ function renderInventory(save) {
   elements.inventoryCapacity.textContent = inventory.items.length + " / " + inventory.capacity + " 格";
   elements.inventoryItemCount.textContent = inventory.items.length + " 種";
   const cards = inventory.items.map(item => {
-    const definition = ITEM_DEFINITIONS[item.itemId] || {
-      name: item.name || item.itemId,
-      type: "material",
-      description: "此道具來自匯入存檔，尚無使用或裝備資料。",
-    };
+    const definition = Object.hasOwn(ITEM_DEFINITIONS, item.itemId)
+      ? ITEM_DEFINITIONS[item.itemId]
+      : {
+          name: item.name || item.itemId,
+          type: "material",
+          description: "此道具來自匯入存檔，尚無使用或裝備資料。",
+        };
     const card = document.createElement("article");
     card.className = "inventory-card";
     card.dataset.itemId = item.itemId;
