@@ -349,7 +349,9 @@ elements.enter.addEventListener("click", () => {
     setStatus("請先選擇一位角色。", "error");
     return;
   }
-  setStatus("已選擇「" + character.name + "」。遊戲地圖及戰鬥尚未接入；角色資料已保存，可以安全離開此頁。", "success");
+  const target = new URL("../../game/index.html", location.href);
+  if (dbName) target.searchParams.set("dbName", dbName);
+  location.href = target.href;
 });
 
 elements.exportBackup.addEventListener("click", downloadBackup);
