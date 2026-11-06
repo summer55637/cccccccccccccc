@@ -137,7 +137,12 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     await page.locator("#skillPointBadge").filter({ hasText: "技能點數 0" }).waitFor();
     assert.equal(await fireboltCard.locator(".skill-rank").textContent(), "Lv.2 / 3");
     await fireboltCard.locator('button[data-skill-action="assign"][data-slot="1"]').click();
-    await page.locator('#skillShortcuts button[data-cast-shortcut="1"]').click();
+    const fireboltShortcut = page.locator('#skillShortcuts button[data-cast-shortcut="1"]');
+    await page.waitForFunction(() => {
+      const button = document.querySelector('#skillShortcuts button[data-cast-shortcut="1"]');
+      return button && !button.disabled && button.textContent.includes("火焰箭 Lv.2");
+    });
+    await fireboltShortcut.click();
     await page.locator("#adventureMessage").filter({ hasText: "擊敗怪物" }).waitFor({ timeout: 10000 });
     const combatSave = await page.evaluate(async ({ name, id }) => {
       const { OfflineCharacterDB } = await import("/offline/storage/indexeddb.js");
