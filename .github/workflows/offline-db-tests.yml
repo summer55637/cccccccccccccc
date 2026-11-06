@@ -1,0 +1,48 @@
+name: Offline character IndexedDB tests
+
+on:
+  push:
+    branches:
+      - offline/local-character-system
+    paths:
+      - "offline/**"
+      - ".github/workflows/offline-db-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offline-db-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  indexeddb-browser-tests:
+    name: Chromium IndexedDB CRUD and persistence
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Playwright
+        working-directory: offline
+        run: npm install --no-save --no-package-lock playwright
+
+      - name: Install Chromium
+        working-directory: offline
+        run: npx playwright install --with-deps chromium
+
+      - name: Run real-browser IndexedDB tests
+        run: node offline/tests/run-browser-tests.mjs
