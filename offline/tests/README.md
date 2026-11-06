@@ -14,7 +14,11 @@ progression-test.html 及 progression.test.mjs 驗證職業初始能力值、經
 
 ## 地圖與移動測試
 
-world-test.html 及 world.test.mjs 驗證新手村地圖尺寸、出生點、樹木／岩石／水域碰撞、單格移動、地圖邊界、無效方向及 IndexedDB 座標保存。
+world-test.html 及 world.test.mjs 驗證新手村地圖尺寸、出生點、樹木／岩石／水域及活動怪物碰撞、單格移動、地圖邊界、無效方向及 IndexedDB 座標保存。
+
+## 怪物與戰鬥測試
+
+combat-test.html 及 combat.test.mjs 使用臨時 IndexedDB 驗證怪物資料、待機／警戒／攻擊 AI、攻擊距離、命中與落空、玩家 HP、怪物反擊、攻擊冷卻、經驗獎勵、掉落物保存、死亡狀態及怪物重生。角色 UI 整合測試另會實際進入遊戲、攻擊相鄰怪物、確認獎勵並重新載入遊戲頁。
 
 ## 存檔備份測試
 
@@ -29,6 +33,6 @@ backup-ui.test.mjs 驗證完整 JSON 匯出及還原流程：
 
 ## GitHub Actions
 
-推送到 offline/local-character-system 分支的 offline/** 檔案變更時，GitHub Actions 會安裝 Chromium 並執行 offline/tests/run-browser-tests.mjs。流程會依序執行 IndexedDB、角色管理介面、地圖移動、角色成長及備份／還原測試。
+推送到 offline/local-character-system 分支的 offline/** 檔案變更時，GitHub Actions 會安裝 Chromium 並執行 offline/tests/run-browser-tests.mjs。流程會依序執行 IndexedDB、角色管理介面與戰鬥整合、地圖移動、怪物戰鬥、角色成長及備份／還原測試。
 
 各測試使用獨立的臨時 IndexedDB，結束後自動清除測試資料庫，不會刪除正式存檔，也不會連線原遊戲伺服器。
