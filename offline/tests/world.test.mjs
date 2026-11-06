@@ -70,6 +70,16 @@ export async function runWorldTests({ onLog = () => {} } = {}) {
     assert.equal(collision.reason.includes("樹木"), true);
     pass("碰到樹木時停止且座標不變");
 
+    const monsterBlock = calculateMovement(
+      { x: 10, y: 6 },
+      "right",
+      "start",
+      [{ x: 11, y: 6 }],
+    );
+    assert.equal(monsterBlock.moved, false);
+    assert.equal(monsterBlock.reason, "前方有怪物，無法通過。");
+    pass("活動怪物佔據的格子無法穿越");
+
     const boundary = calculateMovement({ x: 0, y: 0 }, "left");
     assert.equal(boundary.moved, false);
     assert.equal(boundary.reason, "已到達地圖邊界。");
