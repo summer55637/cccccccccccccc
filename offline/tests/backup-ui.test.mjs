@@ -63,7 +63,15 @@ export async function runBackupUITests({ browser, baseUrl, onLog = () => {} }) {
     }, { dbName, id: characterId });
     logPass(onLog, "角色背包、裝備、技能、任務及設定均寫入測試資料");
 
-    const download = await page.waitForEvent("download", () => page.locator("#exportBackupButton").click());
+    const downloadPromise = page.waitForEvent("download", { timeout: 10000 });
+    await page.locator("#exportBackupButton").click();
+    let download;
+    try {
+      download = await downloadPromise;
+    } catch (error) {
+      const statusText = await page.locator("#appStatus").textContent();
+      throw new Error("備份下載沒有產生檔案；畫面狀態：" + statusText + "；原因：" + error.message);
+    }
     assert.match(download.suggestedFilename(), /^offline-adventure-save-.*\.json$/);
     const stream = await download.createReadStream();
     const chunks = [];
