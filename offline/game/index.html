@@ -71,22 +71,25 @@
             <span class="zone-badge">和平區域</span>
           </div>
 
-          <div class="world-stage" role="img" aria-label="自製新手村示意場景，目前尚未開放角色移動">
-            <div class="stage-sun"></div>
-            <div class="stage-hill hill-one"></div>
-            <div class="stage-hill hill-two"></div>
-            <div class="stage-tree tree-one"><i></i></div>
-            <div class="stage-tree tree-two"><i></i></div>
-            <div class="stage-tree tree-three"><i></i></div>
-            <div class="stage-path"></div>
-            <div class="stage-water"></div>
-            <div class="player-marker">
-              <span class="player-shadow"></span>
-              <span class="player-icon" id="worldAvatar">🛡️</span>
-              <span class="player-name" id="worldCharacterName">角色</span>
-            </div>
+          <div class="world-stage" aria-label="新手村地圖，可使用鍵盤或方向按鈕移動角色">
+            <div id="worldGrid" class="world-grid" role="group" aria-label="新手村 20 乘 12 格地圖"></div>
             <div class="stage-location">安全區 · 新手村</div>
-            <div class="stage-locked">移動與地圖互動將於下一階段開放</div>
+            <div class="stage-legend"><span><i class="legend-grass"></i>草地</span><span><i class="legend-tree"></i>樹木</span><span><i class="legend-water"></i>水域</span></div>
+          </div>
+
+          <div class="movement-controls">
+            <div class="movement-help">
+              <strong>角色移動</strong>
+              <span>方向鍵／W A S D，或使用右側方向按鈕；每次移動一格。</span>
+            </div>
+            <div class="dpad" id="movementControls" role="group" aria-label="角色移動方向">
+              <span></span>
+              <button type="button" data-move="up" aria-label="向上移動">↑</button>
+              <span></span>
+              <button type="button" data-move="left" aria-label="向左移動">←</button>
+              <button type="button" data-move="down" aria-label="向下移動">↓</button>
+              <button type="button" data-move="right" aria-label="向右移動">→</button>
+            </div>
           </div>
 
           <section class="game-panel world-info">
