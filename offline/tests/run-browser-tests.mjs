@@ -76,9 +76,15 @@ try {
   });
   assert.equal(progressionResponse?.status(), 200, "角色成長系統測試頁必須正常載入");
   await progressionPage.locator("#run").click();
-  await progressionPage.locator("#status").filter({
-    hasText: "成功：10 項成長系統測試全部通過",
-  }).waitFor({ timeout: 30000 });
+  try {
+    await progressionPage.locator("#status").filter({
+      hasText: "成功：10 項成長系統測試全部通過",
+    }).waitFor({ timeout: 30000 });
+  } catch (error) {
+    const statusText = await progressionPage.locator("#status").textContent();
+    const testLog = await progressionPage.locator("#log").textContent();
+    throw new Error("角色成長測試失敗。狀態：" + statusText + "\\n測試紀錄：\\n" + testLog + "\\n原始錯誤：" + error.message);
+  }
   const progressionLog = await progressionPage.locator("#log").textContent();
   assert.match(progressionLog || "", /全部通過：10 項成長系統測試/);
   assert.deepEqual(progressionErrors, [], "角色成長測試頁發生 JavaScript 錯誤：" + progressionErrors.join("; "));
