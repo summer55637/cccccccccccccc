@@ -101,6 +101,20 @@
             <div id="monsterList" class="monster-list" aria-live="polite"></div>
           </section>
 
+          <section id="inventoryPanel" class="game-panel inventory-panel">
+            <div class="panel-heading">
+              <div><p class="section-kicker">ITEMS & EQUIPMENT</p><h3>背包與裝備</h3></div>
+              <span id="inventoryCapacity" class="combat-badge">0 / 100 格</span>
+            </div>
+            <div class="equipment-area">
+              <strong>目前裝備</strong>
+              <div id="equipmentSlots" class="equipment-slots"></div>
+              <p id="equipmentBonusText" class="equipment-bonus">攻擊加成 +0 · 防禦加成 +0</p>
+            </div>
+            <div class="inventory-heading"><strong>背包道具</strong><span id="inventoryItemCount">0 種</span></div>
+            <div id="inventoryList" class="inventory-list" aria-live="polite"></div>
+          </section>
+
           <section class="game-panel world-info">
             <div>
               <p class="section-kicker">ADVENTURE LOG</p>
@@ -112,7 +126,7 @@
 
           <nav class="action-dock" aria-label="遊戲快捷功能">
             <button type="button" data-feature="combat"><span>⚔</span><strong>戰鬥</strong><small>已開放</small></button>
-            <button type="button" data-feature="inventory"><span>▣</span><strong>背包</strong><small>第 5 階段</small></button>
+            <button type="button" data-feature="inventory"><span>▣</span><strong>背包</strong><small>已開放</small></button>
             <button type="button" data-feature="skills"><span>✧</span><strong>技能</strong><small>第 6 階段</small></button>
             <button type="button" data-feature="quests"><span>◇</span><strong>任務</strong><small>後續開發</small></button>
           </nav>
@@ -124,7 +138,7 @@
             <h2>冒險功能</h2>
             <button type="button" class="feature-row" data-feature="map"><span>🗺️</span><span><strong>世界地圖</strong><small>第 3 階段開放</small></span><b>›</b></button>
             <button type="button" class="feature-row" data-feature="combat"><span>⚔️</span><span><strong>戰鬥</strong><small>普通攻擊及怪物獎勵</small></span><b>›</b></button>
-            <button type="button" class="feature-row" data-feature="inventory"><span>🎒</span><span><strong>背包與裝備</strong><small>第 5 階段開放</small></span><b>›</b></button>
+            <button type="button" class="feature-row" data-feature="inventory"><span>🎒</span><span><strong>背包與裝備</strong><small>藥水、裝備及材料</small></span><b>›</b></button>
             <button type="button" class="feature-row" data-feature="skills"><span>✨</span><span><strong>技能</strong><small>第 6 階段開放</small></span><b>›</b></button>
             <button type="button" class="feature-row" data-feature="quests"><span>📜</span><span><strong>任務</strong><small>後續開發</small></span><b>›</b></button>
           </section>
@@ -137,7 +151,7 @@
           </section>
         </aside>
       </div>
-      <footer class="game-footer"><span>單機原型 · 自製示意介面</span><span>地圖移動與基本戰鬥已可遊玩；背包操作及技能持續開發</span></footer>
+      <footer class="game-footer"><span>單機原型 · 自製示意介面</span><span>地圖移動與基本戰鬥已可遊玩；背包與裝備已開放；技能持續開發</span></footer>
     </main>
   </div>
 </body>
