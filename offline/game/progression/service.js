@@ -4,6 +4,7 @@ import {
   calculateStatAllocation,
   getClassBaseStats,
 } from "./rules.js";
+import { getMapSpawn } from "../world/map.js";
 
 export async function createProgressionCharacter(database, input) {
   if (!(database instanceof OfflineCharacterDB)) throw new TypeError("請提供 OfflineCharacterDB 資料庫。");
@@ -12,6 +13,7 @@ export async function createProgressionCharacter(database, input) {
     return await database.updateCharacter(character.characterId, {
       stats: getClassBaseStats(character.classId),
       statPoints: 0,
+      position: getMapSpawn(character.mapId),
     });
   } catch (error) {
     await database.deleteCharacter(character.characterId);
