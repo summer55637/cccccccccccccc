@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright";
+import { runCharacterUITests } from "./character-ui.test.mjs";
 
 const baseUrl = "http://127.0.0.1:8081";
 const testUrl = `${baseUrl}/offline/tests/indexeddb-test.html`;
@@ -33,27 +34,34 @@ async function waitForServer() {
 try {
   await waitForServer();
   browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
 
-  page.on("pageerror", error => pageErrors.push(error.message));
-
-  // The database test must not need the original game server or any external host.
-  await page.route("**/*", route => {
+  const dbPage = await browser.newPage();
+  dbPage.on("pageerror", error => pageErrors.push(error.message));
+  await dbPage.route("**/*", route => {
     const url = route.request().url();
     return url.startsWith(baseUrl) ? route.continue() : route.abort();
   });
 
-  const response = await page.goto(testUrl, { waitUntil: "load", timeout: 30_000 });
-  assert.equal(response?.status(), 200, "測試頁必須正常載入");
-  await page.locator("#run").click();
-  await page.locator("#status").filter({ hasText: "成功：10 項測試全部通過" }).waitFor({ timeout: 30_000 });
+  const response = await dbPage.goto(testUrl, { waitUntil: "load", timeout: 30_000 });
+  assert.equal(response?.status(), 200, "IndexedDB 測試頁必須正常載入");
+  await dbPage.locator("#run").click();
+  await dbPage.locator("#status").filter({ hasText: "成功：10 項測試全部通過" }).waitFor({ timeout: 30_000 });
 
-  const log = await page.locator("#log").textContent();
+  const log = await dbPage.locator("#log").textContent();
   assert.match(log || "", /全部通過：10 項測試/);
-  assert.deepEqual(pageErrors, [], `瀏覽器發生 JavaScript 錯誤：${pageErrors.join("; ")}`);
-
+  assert.deepEqual(pageErrors, [], `IndexedDB 測試頁發生 JavaScript 錯誤：${pageErrors.join("; ")}`);
   process.stdout.write(log || "10 項 IndexedDB 測試全部通過。\n");
-  process.stdout.write("\nPASS：Chromium IndexedDB browser tests\n");
+  process.stdout.write("\nPASS：IndexedDB CRUD and persistence tests\n");
+  await dbPage.close();
+
+  const uiResult = await runCharacterUITests({
+    browser,
+    baseUrl,
+    onLog: line => process.stdout.write(`${line}\n`),
+  });
+  assert.equal(uiResult.failed, 0, "角色 UI 測試不得失敗");
+  process.stdout.write(`PASS：${uiResult.passed} character lobby UI checks\n`);
+  process.stdout.write("\nPASS：All offline character browser tests\n");
 } catch (error) {
   process.stderr.write(`\nFAIL：${error?.stack || error}\n`);
   process.exitCode = 1;
