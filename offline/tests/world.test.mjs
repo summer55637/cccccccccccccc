@@ -67,7 +67,7 @@ export async function runWorldTests({ onLog = () => {} } = {}) {
     const collision = calculateMovement(right.position, "right");
     assert.equal(collision.moved, false);
     assert.deepEqual(collision.position, right.position);
-    assert.match(collision.reason, /樹木/);
+    assert.equal(collision.reason.includes("樹木"), true);
     pass("碰到樹木時停止且座標不變");
 
     const boundary = calculateMovement({ x: 0, y: 0 }, "left");
