@@ -343,7 +343,10 @@ function renderSkillBook(book) {
     button.className = "skill-shortcut";
     button.dataset.castShortcut = String(slot);
     const skill = assigned && book.skills.find(item => item.skillId === assigned.skillId);
-    button.disabled = !skill;
+    button.disabled = !skill ||
+      skillBusy ||
+      book.character.mp.current < skill.mpCost ||
+      Date.now() < (book.cooldowns[skill.skillId] || 0);
     button.innerHTML = "";
     const slotLabel = document.createElement("small");
     slotLabel.textContent = "快捷 " + slot;
