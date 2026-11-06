@@ -42,8 +42,8 @@ JSON 備份／還原包含技能點數、已學技能、快捷欄及冷卻。舊
 - `learnSkill(database, characterId, skillId)`
 - `assignSkillShortcut(database, characterId, skillId, slot)`
 - `castSkill(database, characterId, skillId, spawnId, options)`
-- `offline/tests/skills-test.html`：13 項技能服務與 IndexedDB 測試。
-- `offline/tests/character-ui.test.mjs`：實際操作技能學習、提升、快捷欄施放及 MP／獎勵保存。
+- `offline/tests/skills-test.html`：14 項技能服務與 IndexedDB 測試。
+- `offline/tests/character-ui.test.mjs`：實際操作技能學習、提升、快捷欄施放、MP／獎勵保存及轉職技能點退還。
 - 備份 UI 測試會確認技能欄位匯出及還原。
 
 所有技能名稱、數值及傷害公式均為本專案自製原型，不代表任何既有遊戲版本或伺服器設定。
