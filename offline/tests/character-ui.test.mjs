@@ -205,6 +205,12 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     await page.locator("#adventureMessage").filter({ hasText: "恢復 20 MP" }).waitFor();
     assert.match(await page.locator("#mpText").textContent(), /25 \/ 53/);
     assert.equal(await page.locator('.inventory-card[data-item-id="blue-potion"]').count(), 0);
+    const fireboltCastButton = page.locator('.skill-card[data-skill-id="firebolt"] button[data-skill-action="cast"]');
+    await page.waitForFunction(() => {
+      const button = document.querySelector('.skill-card[data-skill-id="firebolt"] button[data-skill-action="cast"]');
+      return button && !button.disabled;
+    });
+    assert.equal(await fireboltCastButton.isEnabled(), true, "藍色藥水恢復 MP 後技能施放按鈕應重新啟用");
 
     await page.locator('.inventory-card[data-item-id="iron-sword"] button[data-inventory-action="equip"]').click();
     await page.locator("#equipmentSlots").filter({ hasText: "鐵劍" }).waitFor();
