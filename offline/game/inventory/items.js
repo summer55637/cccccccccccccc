@@ -58,6 +58,13 @@ export const ITEM_DEFINITIONS = Object.freeze({
   }),
 });
 
+export const STARTER_ITEMS = Object.freeze([
+  Object.freeze({ itemId: "red-potion", count: 2 }),
+  Object.freeze({ itemId: "blue-potion", count: 1 }),
+  Object.freeze({ itemId: "iron-sword", count: 1 }),
+  Object.freeze({ itemId: "leather-armor", count: 1 }),
+]);
+
 export const EQUIPMENT_SLOTS = Object.freeze([
   Object.freeze({ slot: "weapon", label: "武器" }),
   Object.freeze({ slot: "armor", label: "防具" }),
