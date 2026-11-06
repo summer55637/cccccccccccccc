@@ -3,6 +3,14 @@ import { getExperienceProgress, STAT_KEYS, STAT_LABELS } from "./progression/rul
 import { getMapDefinition, getMapTile } from "./world/map.js";
 import { moveCharacter } from "./world/movement.js";
 import { attackMonster, getMonsterWorldState } from "./combat/service.js";
+import { EQUIPMENT_SLOTS, getItemDefinition } from "./inventory/items.js";
+import {
+  dropItem,
+  equipItem,
+  getInventorySave,
+  unequipItem,
+  useItem,
+} from "./inventory/service.js";
 
 const CLASS_INFO = Object.freeze({
   knight: { label: "騎士", emblem: "⚔" },
@@ -44,12 +52,18 @@ const elements = {
   movementControls: document.querySelector("#movementControls"),
   monsterList: document.querySelector("#monsterList"),
   combatSummary: document.querySelector("#combatSummary"),
+  inventoryList: document.querySelector("#inventoryList"),
+  inventoryCapacity: document.querySelector("#inventoryCapacity"),
+  inventoryItemCount: document.querySelector("#inventoryItemCount"),
+  equipmentSlots: document.querySelector("#equipmentSlots"),
+  equipmentBonusText: document.querySelector("#equipmentBonusText"),
 };
 let character = null;
 let moving = false;
 let playerMarker = null;
 let monsters = [];
 let attacking = false;
+let inventoryBusy = false;
 
 function setStatus(message, kind = "info") {
   elements.status.textContent = message;
@@ -213,6 +227,113 @@ async function refreshCombatDisplay() {
   renderMap(character, monsters);
   renderMonsterList(monsters);
 }
+function createInventoryAction(label, action, itemId) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "inventory-action action-" + action;
+  button.dataset.inventoryAction = action;
+  if (itemId) button.dataset.itemId = itemId;
+  button.textContent = label;
+  return button;
+}
+function renderInventory(save) {
+  if (!save || !elements.inventoryList) return;
+  const inventory = save.inventory;
+  const equipment = save.equipment;
+  elements.inventoryCapacity.textContent = inventory.items.length + " / " + inventory.capacity + " 格";
+  elements.inventoryItemCount.textContent = inventory.items.length + " 種";
+  const cards = inventory.items.map(item => {
+    const definition = getItemDefinition(item.itemId);
+    const card = document.createElement("article");
+    card.className = "inventory-card";
+    card.dataset.itemId = item.itemId;
+    const heading = document.createElement("div");
+    heading.className = "inventory-card-heading";
+    const name = document.createElement("strong");
+    name.textContent = definition.name;
+    const count = document.createElement("span");
+    count.className = "item-count";
+    count.textContent = "×" + formatNumber(item.count);
+    heading.append(name, count);
+    const description = document.createElement("p");
+    description.textContent = definition.description;
+    const actions = document.createElement("div");
+    actions.className = "inventory-actions";
+    if (definition.type === "consumable") {
+      actions.append(createInventoryAction("使用", "use", item.itemId));
+    }
+    if (definition.type === "equipment") {
+      actions.append(createInventoryAction("裝備", "equip", item.itemId));
+    }
+    actions.append(createInventoryAction("丟棄 1 個", "drop", item.itemId));
+    card.append(heading, description, actions);
+    return card;
+  });
+  if (cards.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "inventory-empty";
+    empty.textContent = "背包目前是空的。擊敗怪物可以取得材料。";
+    cards.push(empty);
+  }
+  elements.inventoryList.replaceChildren(...cards);
+
+  const slots = EQUIPMENT_SLOTS.map(({ slot, label }) => {
+    const row = document.createElement("div");
+    row.className = "equipment-slot";
+    const slotName = document.createElement("span");
+    slotName.textContent = label;
+    const itemId = equipment.slots[slot];
+    const itemName = document.createElement("strong");
+    itemName.textContent = itemId ? getItemDefinition(itemId).name : "尚未裝備";
+    row.append(slotName, itemName);
+    if (itemId) row.append(createInventoryAction("卸下", "unequip", slot));
+    return row;
+  });
+  elements.equipmentSlots.replaceChildren(...slots);
+  elements.equipmentBonusText.textContent =
+    "攻擊加成 +" + save.equipmentBonuses.attackBonus +
+    " · 防禦加成 +" + save.equipmentBonuses.defenseBonus;
+}
+async function refreshInventoryDisplay() {
+  if (!character) return;
+  const save = await getInventorySave(database, character.characterId);
+  character = save.character;
+  renderCharacter(character);
+  renderInventory(save);
+}
+async function requestInventoryAction(action, value) {
+  if (!character || inventoryBusy) return;
+  if (action === "drop" && !window.confirm("確定丟棄 1 個「" + getItemDefinition(value).name + "」？")) {
+    return;
+  }
+  inventoryBusy = true;
+  try {
+    let message = "";
+    if (action === "use") {
+      const result = await useItem(database, character.characterId, value, 1);
+      message = "使用 " + getItemDefinition(value).name + "，恢復 " +
+        result.restored + (result.gauge === "hp" ? " HP。" : " MP。");
+    } else if (action === "drop") {
+      await dropItem(database, character.characterId, value, 1);
+      message = "已丟棄 1 個「" + getItemDefinition(value).name + "」。";
+    } else if (action === "equip") {
+      await equipItem(database, character.characterId, value);
+      message = "已裝備「" + getItemDefinition(value).name + "」。";
+    } else if (action === "unequip") {
+      await unequipItem(database, character.characterId, value);
+      message = "已卸下裝備。";
+    } else {
+      throw new Error("不支援的背包操作。");
+    }
+    await refreshInventoryDisplay();
+    document.querySelector("#adventureMessage").textContent = message;
+    setStatus(message, "success");
+  } catch (error) {
+    setStatus(error?.message || "背包操作失敗。", "error");
+  } finally {
+    inventoryBusy = false;
+  }
+}
 
 function renderCharacter(currentCharacter) {
   const classInfo = CLASS_INFO[currentCharacter.classId] || {
@@ -273,6 +394,7 @@ async function requestAttack(spawnId) {
     await refreshCombatDisplay();
     renderCharacter(character);
     renderMonsterList(monsters);
+    await refreshInventoryDisplay();
 
     let message;
     if (result.defeated) {
@@ -326,6 +448,16 @@ elements.monsterList.addEventListener("click", event => {
   const button = event.target.closest("button[data-attack]");
   if (button && !button.disabled) requestAttack(button.dataset.attack);
 });
+elements.inventoryList.addEventListener("click", event => {
+  const button = event.target.closest("button[data-inventory-action]");
+  if (button && !button.disabled) {
+    requestInventoryAction(button.dataset.inventoryAction, button.dataset.itemId);
+  }
+});
+elements.equipmentSlots.addEventListener("click", event => {
+  const button = event.target.closest("button[data-inventory-action='unequip']");
+  if (button && !button.disabled) requestInventoryAction("unequip", button.dataset.itemId);
+});
 window.addEventListener("keydown", event => {
   const direction = directionFromKey(event.key);
   if (!direction || event.repeat) return;
@@ -345,6 +477,11 @@ document.querySelectorAll("button[data-feature]").forEach(button => {
     if (feature === "combat") {
       setStatus("靠近怪物後可使用普通攻擊；怪物會依距離進入待機、警戒或攻擊狀態。", "success");
       document.querySelector("#combatPanel").scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (feature === "inventory") {
+      setStatus("可使用藥水、裝備武器防具，或丟棄不需要的道具。", "success");
+      document.querySelector("#inventoryPanel").scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     const names = {
@@ -376,6 +513,7 @@ async function initialize() {
     monsters = await getMonsterWorldState(database, character.characterId);
     renderCharacter(character);
     renderMonsterList(monsters);
+    renderInventory(await getInventorySave(database, character.characterId));
     elements.layout.hidden = false;
     setStatus("已載入「" + character.name + "」的本機角色存檔。可以探索並攻擊怪物。", "success");
     document.documentElement.dataset.ready = "true";
