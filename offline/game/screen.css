@@ -457,3 +457,81 @@ main { padding: 22px 0 16px; }
   .monster-card-heading, .monster-health, .monster-distance { grid-column: 1; }
   .monster-attack-button { grid-column: 2; grid-row: 1 / span 3; min-width: 84px; }
 }
+
+
+/* Original offline inventory and equipment panel */
+.inventory-panel { display: grid; gap: 12px; }
+.equipment-area {
+  display: grid;
+  gap: 8px;
+  padding: 11px;
+  border: 1px solid #3c4b56;
+  border-radius: 9px;
+  background: rgba(14, 24, 31, .55);
+}
+.equipment-area > strong, .inventory-heading > strong {
+  color: #e7c998;
+  font-size: 11px;
+}
+.equipment-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.equipment-slot {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #465560;
+  border-radius: 7px;
+  background: rgba(46, 60, 68, .6);
+}
+.equipment-slot > span { color: #9eacb8; font-size: 9px; }
+.equipment-slot > strong { flex: 1 1 auto; color: #eee0cb; font-size: 10px; }
+.equipment-bonus { margin: 0; color: #b6c5b3; font-size: 9px; }
+.inventory-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.inventory-heading > span { color: #9eacb8; font-size: 9px; }
+.inventory-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.inventory-card {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid #3d4b58;
+  border-radius: 9px;
+  background: linear-gradient(145deg, rgba(38, 53, 62, .92), rgba(25, 37, 46, .96));
+}
+.inventory-card-heading { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.inventory-card-heading strong { color: #f0dfc5; font-size: 10px; }
+.item-count { color: #e7c998; font-size: 10px; font-weight: 700; }
+.inventory-card > p { margin: 0; color: #aab8c5; font-size: 9px; line-height: 1.45; }
+.inventory-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+.inventory-action {
+  min-height: 26px;
+  padding: 4px 8px;
+  border: 1px solid #667783;
+  border-radius: 6px;
+  color: #dce5eb;
+  background: #344552;
+  font: inherit;
+  font-size: 9px;
+  cursor: pointer;
+}
+.inventory-action:hover { border-color: #d2b17b; color: #f5e0bd; }
+.inventory-action.action-use, .inventory-action.action-equip {
+  border-color: #92734e;
+  color: #f1d8ae;
+  background: #54432f;
+}
+.inventory-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 16px;
+  border: 1px dashed #4a5966;
+  border-radius: 8px;
+  color: #9eacb8;
+  text-align: center;
+  font-size: 10px;
+}
+@media (max-width: 600px) {
+  .inventory-list, .equipment-slots { grid-template-columns: minmax(0, 1fr); }
+}
