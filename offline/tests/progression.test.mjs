@@ -51,7 +51,8 @@ export async function runProgressionTests({ onLog = () => {} } = {}) {
     const knight = await createProgressionCharacter(database, { name: "測試騎士", classId: "knight" });
     assert.deepEqual(knight.stats, getClassBaseStats("knight"));
     assert.equal(knight.statPoints, 0);
-    pass("依職業初始化六項能力值");
+    assert.equal((await database.loadCharacterSave(knight.characterId)).skills.points, 1);
+    pass("依職業初始化六項能力值及起始技能點數");
 
     const half = await awardExperience(database, knight.characterId, 50);
     assert.equal(half.character.level, 1);
@@ -66,7 +67,9 @@ export async function runProgressionTests({ onLog = () => {} } = {}) {
     assert.equal(levelUp.character.statPoints, 3);
     assert.equal(levelUp.character.hp.max, 112);
     assert.equal(levelUp.character.mp.max, 53);
-    pass("跨越升級門檻並保留溢出經驗值");
+    assert.equal(levelUp.skillPointsGained, 1);
+    assert.equal((await database.loadCharacterSave(knight.characterId)).skills.points, 2);
+    pass("跨越升級門檻並保留溢出經驗值及技能點數");
 
     const allocated = await allocateStatPoints(database, knight.characterId, "str", 1);
     assert.equal(allocated.stats.str, 13);
@@ -113,6 +116,8 @@ export async function runProgressionTests({ onLog = () => {} } = {}) {
     const reopened = new OfflineCharacterDB({ dbName });
     try {
       const restored = await reopened.getCharacter(knight.characterId);
+      const restoredSave = await reopened.loadCharacterSave(knight.characterId);
+      assert.equal(restoredSave.skills.points, 2);
       assert.equal(restored.level, 2);
       assert.equal(restored.stats.str, 13);
       assert.equal(restored.statPoints, 2);
