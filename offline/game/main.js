@@ -218,12 +218,14 @@ function renderMonsterList(currentMonsters = monsters) {
     attackButton.type = "button";
     attackButton.className = "monster-attack-button";
     attackButton.dataset.attack = monster.spawnId;
-    attackButton.disabled = monster.hp <= 0 || monster.distance > 1 || attacking;
+    attackButton.disabled = monster.hp <= 0 || monster.distance > 1 || attacking || character?.hp.current <= 0;
     attackButton.textContent = monster.hp <= 0
       ? "重生中"
-      : monster.distance > 1
-        ? "靠近後攻擊"
-        : "普通攻擊";
+      : character?.hp.current <= 0
+        ? "HP 不足"
+        : monster.distance > 1
+          ? "靠近後攻擊"
+          : "普通攻擊";
     card.append(heading, health, distance, attackButton);
     return card;
   });
@@ -345,6 +347,7 @@ function renderSkillBook(book) {
     const skill = assigned && book.skills.find(item => item.skillId === assigned.skillId);
     button.disabled = !skill ||
       skillBusy ||
+      book.character.hp.current <= 0 ||
       book.character.mp.current < skill.mpCost ||
       Date.now() < (book.cooldowns[skill.skillId] || 0);
     button.innerHTML = "";
@@ -413,7 +416,8 @@ function renderSkillBook(book) {
         "cast",
         skill.skillId,
         null,
-        skillBusy || cooldownRemaining > 0 || book.character.mp.current < skill.mpCost,
+        skillBusy || book.character.hp.current <= 0 || cooldownRemaining > 0 ||
+          book.character.mp.current < skill.mpCost,
       ));
       for (let slot = 1; slot <= 4; slot += 1) {
         actions.append(createSkillAction(
@@ -521,6 +525,7 @@ async function requestInventoryAction(action, value) {
       throw new Error("不支援的背包操作。");
     }
     await refreshInventoryDisplay();
+    await refreshSkillDisplay();
     document.querySelector("#adventureMessage").textContent = message;
     setStatus(message, "success");
   } catch (error) {
