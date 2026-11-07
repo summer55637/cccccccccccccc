@@ -180,9 +180,16 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
       const database = new OfflineCharacterDB({ dbName: name });
       try {
         const character = await database.getCharacter(id);
+        const save = await database.loadCharacterSave(id);
         await database.updateCharacter(id, {
           hp: { current: 30, max: character.hp.max },
           mp: { current: 5, max: character.mp.max },
+        });
+        await database.saveCharacterData(id, {
+          skills: {
+            ...save.skills,
+            cooldowns: { ...save.skills.cooldowns, firebolt: 0 },
+          },
         });
         await grantItem(database, id, "red-potion", 2);
 
@@ -193,6 +200,11 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     await page.reload({ waitUntil: "load" });
     await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
     await page.locator("#inventoryPanel").scrollIntoViewIfNeeded();
+    assert.equal(
+      await page.locator('.skill-card[data-skill-id="firebolt"] button[data-skill-action="cast"]').isEnabled(),
+      false,
+      "MP 不足時技能施放按鈕應停用",
+    );
 
     const redPotionCard = page.locator('.inventory-card[data-item-id="red-potion"]');
     await redPotionCard.locator('button[data-inventory-action="use"]').click();
