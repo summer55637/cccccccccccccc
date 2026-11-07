@@ -1,4 +1,4 @@
-const CACHE_NAME = "offline-adventure-shell-v2";
+const CACHE_NAME = "offline-adventure-shell-v3";
 const PRECACHE_ASSETS = [
   "./character/ui/index.html",
   "./character/ui/styles.css",

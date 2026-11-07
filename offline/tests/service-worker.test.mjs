@@ -26,7 +26,7 @@ export async function runServiceWorkerTests({ browser, baseUrl, onLog = () => {}
         });
       }
       const cacheNames = await caches.keys();
-      const cacheName = cacheNames.find(name => name === "offline-adventure-shell-v2");
+      const cacheName = cacheNames.find(name => name === "offline-adventure-shell-v3");
       if (!cacheName) throw new Error("找不到已安裝的單機版快取。");
       const cache = await caches.open(cacheName);
       const entries = await cache.keys();
@@ -50,7 +50,7 @@ export async function runServiceWorkerTests({ browser, baseUrl, onLog = () => {}
       }
       const manifestUrl = new URL(manifestLink.href);
       const cacheNames = await caches.keys();
-      const shellCacheName = cacheNames.find(name => name === "offline-adventure-shell-v2");
+      const shellCacheName = cacheNames.find(name => name === "offline-adventure-shell-v3");
       if (!shellCacheName) throw new Error("找不到 PWA 離線快取。");
       const shellCache = await caches.open(shellCacheName);
       const manifestResponse = await shellCache.match(manifestUrl.href);

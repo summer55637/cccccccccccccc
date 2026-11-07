@@ -45,12 +45,15 @@ const elements = {
   exportBackup: document.querySelector("#exportBackupButton"),
   importBackup: document.querySelector("#importBackupButton"),
   importFile: document.querySelector("#importBackupFile"),
+  installButton: document.querySelector("#installAppButton"),
+  installStatus: document.querySelector("#installAppStatus"),
 };
 
 let characters = [];
 let selectedCharacterId = null;
 let isBusy = false;
 let isBackupBusy = false;
+let deferredInstallPrompt = null;
 
 function setStatus(message, kind = "info") {
   elements.status.textContent = message;
@@ -387,6 +390,42 @@ elements.importFile.addEventListener("change", async event => {
 });
 
 window.addEventListener("pagehide", () => db.close());
+
+window.addEventListener("beforeinstallprompt", event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  elements.installButton.hidden = false;
+  elements.installStatus.textContent = "瀏覽器已準備好安裝，可直接按下安裝按鈕。";
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  elements.installButton.hidden = true;
+  elements.installStatus.textContent = "安裝完成！之後可從手機主畫面開啟單機冒險世界。";
+});
+
+elements.installButton.addEventListener("click", async () => {
+  if (!deferredInstallPrompt) {
+    elements.installStatus.textContent = "請使用瀏覽器選單中的「安裝應用程式」或「加到主畫面」。";
+    return;
+  }
+
+  const promptEvent = deferredInstallPrompt;
+  elements.installButton.disabled = true;
+  try {
+    await promptEvent.prompt();
+    const choice = await promptEvent.userChoice;
+    elements.installStatus.textContent = choice?.outcome === "accepted"
+      ? "已接受安裝要求；完成後可從手機主畫面開啟。"
+      : "已取消安裝；你仍可依照上方步驟手動加入主畫面。";
+  } catch (error) {
+    elements.installStatus.textContent = "無法開啟安裝提示，請改用瀏覽器選單手動安裝。";
+  } finally {
+    deferredInstallPrompt = null;
+    elements.installButton.hidden = true;
+    elements.installButton.disabled = false;
+  }
+});
 
 async function initialize(offlineShellPromise) {
   try {

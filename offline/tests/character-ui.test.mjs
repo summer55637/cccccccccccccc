@@ -37,6 +37,25 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.match(await page.locator("#appStatus").textContent(), /本機角色資料庫已就緒/);
     assert.equal(await page.locator("#characterCount").textContent(), "0 位");
     assert.equal(await page.locator("#emptyState").isVisible(), true);
+    assert.equal(await page.locator("#installGuide").isVisible(), true);
+    assert.match(await page.locator("#iosInstallHelp").textContent(), /Safari.*分享.*加入主畫面/);
+    assert.match(await page.locator("#androidInstallHelp").textContent(), /Chrome.*安裝應用程式/);
+    assert.equal(await page.locator("#installAppButton").isVisible(), false);
+    await page.evaluate(() => {
+      const event = new Event("beforeinstallprompt", { cancelable: true });
+      event.prompt = async () => {};
+      event.userChoice = Promise.resolve({ outcome: "accepted", platform: "test" });
+      window.dispatchEvent(event);
+    });
+    assert.equal(await page.locator("#installAppButton").isVisible(), true,
+      "收到瀏覽器原生安裝事件後必須顯示安裝按鈕");
+    await page.locator("#installAppButton").click();
+    await page.locator("#installAppStatus").filter({ hasText: "已接受安裝要求" }).waitFor();
+    assert.equal(await page.locator("#installAppButton").isVisible(), false,
+      "完成提示後安裝按鈕應隱藏");
+    await page.evaluate(() => window.dispatchEvent(new Event("appinstalled")));
+    await page.locator("#installAppStatus").filter({ hasText: "安裝完成" }).waitFor();
+    logPass(onLog, "顯示 iOS／Android 安裝步驟並支援瀏覽器原生安裝提示");
     logPass(onLog, "開啟角色管理頁及顯示空角色清單");
 
     await page.locator("#characterName").fill("測試勇士");
@@ -334,7 +353,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.deepEqual(pageErrors, [], `角色 UI 發生 JavaScript 錯誤：${pageErrors.join("; ")}`);
     assert.deepEqual(externalRequests, [], `角色 UI 不應連線外部服務：${externalRequests.join("; ")}`);
     onLog("PASS：角色 UI 建立、編輯、選擇、重新載入及刪除測試");
-    return { passed: 14, failed: 0 };
+    return { passed: 15, failed: 0 };
   } finally {
     await page.close();
     cleanupPage = await browser.newPage();
