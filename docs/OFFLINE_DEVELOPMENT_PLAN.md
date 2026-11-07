@@ -102,8 +102,8 @@
 - [x] 真實 IndexedDB 交易中途注入 abort，確認角色、背包及裝備整批回滾；交易失敗後可再次寫入及讀取。
 - [x] IndexedDB 連線收到 close 事件後清除舊連線；下一次操作重新開啟資料庫並讀取原角色。
 - [x] 250 次連續原子存檔壓力測試，以及 Firefox、WebKit 完整 IndexedDB 測試；Chromium、Firefox、WebKit 均通過 17 項資料庫測試。
-- [x] 在 IndexedDB 寫入邊界注入 QuotaExceededError，驗證繁體中文錯誤訊息、角色／背包／裝備整批回滾及解除注入後可再次存檔（待 CI 最終確認）。
-- [ ] 在大量 IndexedDB 寫入途中關閉測試分頁，再由另一分頁檢查未完成交易是否全部回滾（待 CI）。
+- [x] 在 IndexedDB 寫入邊界注入 QuotaExceededError，驗證繁體中文錯誤訊息、角色／背包／裝備整批回滾及解除注入後可再次存檔；GitHub Actions 已通過。
+- [x] 在大量 IndexedDB 寫入途中關閉測試分頁，再由另一分頁檢查最後成功存檔保留且沒有半套資料；GitHub Actions 已通過。
 - [x] Firefox、WebKit 冒煙測試：角色建立、遊戲載入、重新整理保存及返回角色管理，沒有外部網路請求。
 - [ ] 完成真實 iOS／Android 裝置及更長時間效能量測。
 - [ ] 真正耗盡作業系統／瀏覽器儲存配額、程序強制終止（非一般分頁關閉），以及跨瀏覽器存檔相容測試。
