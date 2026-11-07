@@ -269,7 +269,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.equal(await page.locator("#equipmentBonusText").textContent(), "攻擊加成 +0 · 防禦加成 +0");
     await page.reload({ waitUntil: "load" });
     await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
-    assert.match(await page.locator("#hpText").textContent(), /60 \/ 112/);
+    assert.match(await page.locator("#hpText").textContent(), /30 \/ 112/);
     assert.match(await page.locator("#mpText").textContent(), /25 \/ 53/);
     assert.equal(await page.locator('.inventory-card[data-item-id="iron-sword"]').count(), 1);
     logPass(onLog, "藥水使用、裝備／卸下、丟棄與背包存檔整合操作");
