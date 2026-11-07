@@ -456,5 +456,276 @@ export async function runStorageRecoveryTests({ browser, browserType, baseUrl, o
     }
   }
 
+
+  const quotaTestRoot = process.env.CHROME_QUOTA_TEST_ROOT;
+  if (!quotaTestRoot) {
+    onLog("SKIP：未設定 CHROME_QUOTA_TEST_ROOT，略過真實儲存配額耗盡測試");
+  } else {
+    const profileDir = await mkdtemp(join(quotaTestRoot, "offline-real-quota-profile-"));
+    const realQuotaContext = await browserType.launchPersistentContext(profileDir, {
+      headless: true,
+      serviceWorkers: "block",
+      args: ["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"],
+    });
+    const quotaPage = await realQuotaContext.newPage();
+    const appDbName = "offline-real-quota-app-" + Date.now();
+    const fillerDbName = "offline-real-quota-filler-" + Date.now();
+    let appDatabaseReady = false;
+    let fillerDatabaseReady = false;
+
+    try {
+      const response = await quotaPage.goto(
+        baseUrl + "/offline/tests/indexeddb-test.html",
+        { waitUntil: "load", timeout: 30000 },
+      );
+      assert.equal(response?.status(), 200, "真實配額測試頁必須載入成功");
+
+      const baseline = await quotaPage.evaluate(async dbName => {
+        const { OfflineCharacterDB } = await import("../storage/indexeddb.js");
+        const database = new OfflineCharacterDB({ dbName });
+        await database.open();
+        const character = await database.createCharacter({
+          name: "真實配額測試",
+          classId: "knight",
+        });
+        await database.updateCharacterAndSaveData(
+          character.characterId,
+          { level: 1 },
+          {
+            inventory: {
+              capacity: 100,
+              items: [{ itemId: "baseline-potion", count: 3 }],
+            },
+            equipment: { slots: { weapon: "baseline-sword" } },
+          },
+        );
+        window.__realQuotaAppDatabase = database;
+        return { characterId: character.characterId };
+      }, appDbName);
+      appDatabaseReady = true;
+
+      const fillResult = await quotaPage.evaluate(async dbName => {
+        const MB = 1024 * 1024;
+        const initialEstimate = await navigator.storage.estimate();
+        const quota = Number(initialEstimate.quota || 0);
+        const usage = Number(initialEstimate.usage || 0);
+        if (!Number.isFinite(quota) || quota < 1024 * 1024) {
+          throw new Error("瀏覽器未回報有效的來源儲存配額。");
+        }
+
+        function openDatabase() {
+          return new Promise((resolve, reject) => {
+            const request = indexedDB.open(dbName, 1);
+            request.onupgradeneeded = () => {
+              request.result.createObjectStore("payloads", { keyPath: "id" });
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error || new Error("無法建立實際配額填充資料庫。"));
+          });
+        }
+
+        function randomBytes(length) {
+          const bytes = new Uint8Array(length);
+          for (let offset = 0; offset < length; offset += 65536) {
+            crypto.getRandomValues(bytes.subarray(offset, Math.min(offset + 65536, length)));
+          }
+          return bytes;
+        }
+
+        function writeOneBatch(database, id) {
+          return new Promise(resolve => {
+            let requestErrorName = "";
+            let synchronousErrorName = "";
+            let settled = false;
+            const transaction = database.transaction("payloads", "readwrite");
+            const request = transaction.objectStore("payloads").add({
+              id,
+              payload: new Blob([randomBytes(512 * 1024)], {
+                type: "application/octet-stream",
+              }),
+            });
+            request.onerror = () => {
+              requestErrorName = request.error?.name || "";
+            };
+            transaction.oncomplete = () => {
+              if (settled) return;
+              settled = true;
+              resolve({ committed: true, errorName: "" });
+            };
+            transaction.onabort = () => {
+              if (settled) return;
+              settled = true;
+              resolve({
+                committed: false,
+                errorName: requestErrorName || transaction.error?.name || synchronousErrorName,
+              });
+            };
+            transaction.onerror = () => {};
+          });
+        }
+
+        const database = await openDatabase();
+        window.__realQuotaFillerDatabase = database;
+        const maximumFillBytes = Math.min(
+          Math.max(quota - usage + 32 * MB, 64 * MB),
+          400 * MB,
+        );
+        const batchBytes = 512 * 1024;
+        let bytesWritten = 0;
+        let nextId = 1;
+        let quotaExceeded = false;
+        let errorName = "";
+
+        while (bytesWritten + batchBytes <= maximumFillBytes) {
+          let result;
+          try {
+            result = await writeOneBatch(database, nextId);
+          } catch (error) {
+            result = { committed: false, errorName: error?.name || "" };
+          }
+          if (!result.committed) {
+            errorName = result.errorName;
+            quotaExceeded = errorName === "QuotaExceededError";
+            break;
+          }
+          bytesWritten += batchBytes;
+          nextId += 1;
+        }
+
+        database.close();
+        window.__realQuotaFillerDatabase = null;
+        const afterEstimate = await navigator.storage.estimate();
+        return {
+          quota,
+          usage,
+          afterUsage: Number(afterEstimate.usage || 0),
+          bytesWritten,
+          maximumFillBytes,
+          quotaExceeded,
+          errorName,
+        };
+      }, fillerDbName);
+      fillerDatabaseReady = true;
+
+      onLog(
+        "INFO：真實配額測試初始估算 " +
+        fillResult.usage + "/" + fillResult.quota +
+        " bytes；實際完成寫入 " + fillResult.bytesWritten + " bytes；錯誤 " +
+        (fillResult.errorName || "未觸發"),
+      );
+      assert.equal(
+        fillResult.quotaExceeded,
+        true,
+        "必須由瀏覽器實際 IndexedDB 配額檢查觸發 QuotaExceededError，而非故障注入",
+      );
+      passed += 1;
+      onLog("PASS：持久化 Chromium 實際寫入資料直到 IndexedDB 回報 QuotaExceededError");
+
+      const appWrite = await quotaPage.evaluate(async characterId => {
+        const items = Array.from({ length: 5000 }, () => ({
+          itemId: "x".repeat(128),
+          count: 1,
+          extra: "y".repeat(37),
+        }));
+        const payloadSize = JSON.stringify({
+          capacity: 5000,
+          items,
+        }).length;
+        try {
+          await window.__realQuotaAppDatabase.updateCharacterAndSaveData(
+            characterId,
+            { level: 2 },
+            {
+              inventory: { capacity: 5000, items },
+              equipment: { slots: { weapon: "replacement-sword" } },
+            },
+          );
+          return { succeeded: true, name: "", message: "", payloadSize };
+        } catch (error) {
+          return {
+            succeeded: false,
+            name: error?.name || "",
+            message: error?.message || "",
+            payloadSize,
+          };
+        }
+      }, baseline.characterId);
+
+      assert.ok(
+        appWrite.payloadSize < 1_000_000,
+        "應用程式存檔測試資料必須留在存檔格式允許的 1 MB 範圍內",
+      );
+      assert.equal(
+        appWrite.succeeded,
+        false,
+        "儲存配額耗盡後，應用程式的原子存檔必須被瀏覽器拒絕",
+      );
+      assert.equal(appWrite.name, "QuotaExceededError",
+        "應用程式原子存檔應收到真實 QuotaExceededError");
+      assert.equal(appWrite.message, "瀏覽器儲存空間不足。",
+        "真實配額耗盡必須顯示正確繁體中文提示");
+
+      const preserved = await quotaPage.evaluate(characterId =>
+        window.__realQuotaAppDatabase.loadCharacterSave(characterId),
+      baseline.characterId);
+      assert.equal(preserved.character.level, 1, "真實配額耗盡時角色資料必須回滾");
+      assert.deepEqual(
+        preserved.inventory.items,
+        [{ itemId: "baseline-potion", count: 3 }],
+        "真實配額耗盡時背包必須保留舊資料",
+      );
+      assert.equal(
+        preserved.equipment.slots.weapon,
+        "baseline-sword",
+        "真實配額耗盡時裝備必須保留舊資料",
+      );
+      passed += 1;
+      onLog("PASS：真實儲存配額耗盡時，角色、背包及裝備原子存檔整批回滾並顯示正確訊息");
+
+      await deleteDatabase(quotaPage, fillerDbName);
+      fillerDatabaseReady = false;
+      await quotaPage.evaluate(async characterId => {
+        await window.__realQuotaAppDatabase.updateCharacterAndSaveData(
+          characterId,
+          { level: 2 },
+          {
+            inventory: {
+              capacity: 100,
+              items: [{ itemId: "recovered-potion", count: 4 }],
+            },
+          },
+        );
+      }, baseline.characterId);
+      const recovered = await quotaPage.evaluate(characterId =>
+        window.__realQuotaAppDatabase.loadCharacterSave(characterId),
+      baseline.characterId);
+      assert.equal(recovered.character.level, 2, "釋放空間後角色必須可再次存檔");
+      assert.deepEqual(
+        recovered.inventory.items,
+        [{ itemId: "recovered-potion", count: 4 }],
+        "釋放空間後背包必須可再次存檔",
+      );
+      passed += 1;
+      onLog("PASS：刪除配額填充資料釋放空間後，遊戲存檔可再次成功");
+
+      await quotaPage.evaluate(async () => window.__realQuotaAppDatabase.close());
+      appDatabaseReady = false;
+      await deleteDatabase(quotaPage, appDbName);
+    } finally {
+      try {
+        await quotaPage.evaluate(async () => {
+          window.__realQuotaFillerDatabase?.close();
+          await window.__realQuotaAppDatabase?.close();
+        });
+        if (fillerDatabaseReady) await deleteDatabase(quotaPage, fillerDbName);
+        if (appDatabaseReady) await deleteDatabase(quotaPage, appDbName);
+      } catch {
+        // The context may already have been closed after an assertion failure.
+      }
+      await realQuotaContext.close();
+      await rm(profileDir, { recursive: true, force: true });
+    }
+  }
+
   return { passed, failed: 0 };
 }
