@@ -67,6 +67,48 @@ export async function runIndexedDBTests({ onLog = () => {} } = {}) {
     assert(saved.quests.entries[0].status === "active", "任務應保存");
     pass("保存及讀取背包、裝備、技能和任務");
 
+    const objectStorePrototype = globalThis.IDBObjectStore?.prototype;
+    assert(objectStorePrototype && typeof objectStorePrototype.put === "function", "瀏覽器必須支援 IndexedDB object store");
+    const originalPut = objectStorePrototype.put;
+    let injectedAbort = false;
+    let interruptedError = null;
+    objectStorePrototype.put = function (...args) {
+      const request = originalPut.apply(this, args);
+      if (!injectedAbort && this.name === "inventories") {
+        injectedAbort = true;
+        const activeTransaction = this.transaction;
+        request.addEventListener("success", () => {
+          try { activeTransaction.abort(); } catch { /* The transaction may already be inactive. */ }
+        }, { once: true });
+      }
+      return request;
+    };
+    try {
+      await db.updateCharacterAndSaveData(created.characterId, { level: 9 }, {
+        inventory: { capacity: 80, items: [{ itemId: "test-potion", count: 99 }] },
+        equipment: { slots: { weapon: "replacement-sword" } },
+      });
+    } catch (error) {
+      interruptedError = error;
+    } finally {
+      objectStorePrototype.put = originalPut;
+    }
+    assert(injectedAbort, "必須在背包寫入時觸發交易中止");
+    assert(interruptedError, "中止的 IndexedDB 交易必須回報錯誤");
+    const rolledBack = await db.loadCharacterSave(created.characterId);
+    assert(rolledBack.character.level === 8, "交易中止後角色等級必須回復原值");
+    assert(rolledBack.inventory.items[0].count === 5, "交易中止後背包必須回復原值");
+    assert(rolledBack.equipment.slots.weapon === "test-sword", "交易中止後裝備必須回復原值");
+    pass("交易中途中止時，角色、背包及裝備整批回滾");
+
+    await db.updateCharacterAndSaveData(created.characterId, { level: 9 }, {
+      inventory: { capacity: 80, items: [{ itemId: "test-potion", count: 6 }] },
+    });
+    const recoveredAfterAbort = await db.loadCharacterSave(created.characterId);
+    assert(recoveredAfterAbort.character.level === 9, "中止後應可再次更新角色");
+    assert(recoveredAfterAbort.inventory.items[0].count === 6, "中止後應可再次保存背包");
+    pass("交易中止後可再次寫入並正常讀取存檔");
+
     const list = await db.listCharacters();
     assert(list.length === 1 && list[0].characterId === created.characterId, "角色清單應包含角色");
     pass("列出本機角色");
