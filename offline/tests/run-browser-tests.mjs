@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright";
 import { runCharacterUITests } from "./character-ui.test.mjs";
+import { runMobileUITests } from "./mobile-ui.test.mjs";
 import { runBackupUITests } from "./backup-ui.test.mjs";
 import { runOfflineBoundaryTests } from "./offline-boundary.test.mjs";
 import { runServiceWorkerTests } from "./service-worker.test.mjs";
@@ -67,6 +68,14 @@ try {
   });
   assert.equal(uiResult.failed, 0, "角色 UI 測試不得失敗");
   process.stdout.write("PASS：" + uiResult.passed + " character lobby UI checks\n");
+
+  const mobileResult = await runMobileUITests({
+    browser,
+    baseUrl,
+    onLog: line => process.stdout.write(line + "\n"),
+  });
+  assert.equal(mobileResult.failed, 0, "行動版 UI 測試不得失敗");
+  process.stdout.write("PASS：" + mobileResult.passed + " mobile and tablet UI checks\n");
 
   const worldPage = await browser.newPage();
   const worldErrors = [];
