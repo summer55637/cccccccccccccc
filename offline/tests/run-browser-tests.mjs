@@ -50,10 +50,10 @@ try {
   const response = await dbPage.goto(testUrl, { waitUntil: "load", timeout: 30000 });
   assert.equal(response?.status(), 200, "IndexedDB 測試頁必須正常載入");
   await dbPage.locator("#run").click();
-  await dbPage.locator("#status").filter({ hasText: "成功：16 項測試全部通過" }).waitFor({ timeout: 30000 });
+  await dbPage.locator("#status").filter({ hasText: "成功：17 項測試全部通過" }).waitFor({ timeout: 30000 });
 
   const log = await dbPage.locator("#log").textContent();
-  assert.match(log || "", /全部通過：16 項測試/);
+  assert.match(log || "", /全部通過：17 項測試/);
   assert.deepEqual(pageErrors, [], "IndexedDB 測試頁發生 JavaScript 錯誤：" + pageErrors.join("; "));
   process.stdout.write(log || "10 項 IndexedDB 測試全部通過。\n");
   process.stdout.write("\nPASS：IndexedDB CRUD and persistence tests\n");
