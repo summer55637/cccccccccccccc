@@ -129,7 +129,8 @@ main { padding: 22px 0 16px; }
   .game-shell { width: min(100% - 20px, 620px); }
   .game-topbar { flex-wrap: wrap; gap: 10px; padding: 13px 0; }
   .topbar-status { margin-left: auto; font-size: 9px; }
-  .return-button { order: 3; width: 100%; }
+  .return-button { order: 3; width: 100%; min-height: 44px; }
+  .quiet-return, .gold-button { min-height: 44px; }
   .game-layout { grid-template-columns: 1fr; }
   .feature-sidebar { grid-template-columns: 1fr; }
   .world-stage { min-height: 350px; }
@@ -289,8 +290,8 @@ main { padding: 22px 0 16px; }
 .dpad {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, 39px);
-  grid-template-rows: repeat(2, 35px);
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(2, 44px);
   gap: 4px;
 }
 .dpad button {
@@ -309,7 +310,7 @@ main { padding: 22px 0 16px; }
   .world-stage { min-height: 0; aspect-ratio: 5 / 3; }
   .movement-controls { align-items: center; padding: 10px; }
   .movement-help span { max-width: 220px; }
-  .dpad { grid-template-columns: repeat(3, 42px); grid-template-rows: repeat(2, 39px); }
+  .dpad { grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(2, 44px); }
   .stage-legend { top: auto; right: 7px; bottom: 8px; gap: 5px; padding: 5px 6px; font-size: 8px; }
   .stage-location { top: 7px; left: 7px; }
 }
