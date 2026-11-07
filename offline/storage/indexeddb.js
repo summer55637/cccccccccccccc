@@ -352,7 +352,7 @@ export class OfflineCharacterDB {
       catch (error) { operationError = error; tx.abort(); }
     };
     try { await done; return updated; }
-    catch (error) { throw operationError || dbError(error); }
+    catch (error) { throw dbError(operationError || error); }
   }
 
   /** Supplied parts are written atomically; omitted parts remain unchanged. */
@@ -380,7 +380,7 @@ export class OfflineCharacterDB {
         tx.objectStore(STORES.characters).put(c);
       } catch (error) { operationError = error; tx.abort(); }
     };
-    try { await done; } catch (error) { throw operationError || dbError(error); }
+    try { await done; } catch (error) { throw dbError(operationError || error); }
     return this.loadCharacterSave(id);
   }
 
@@ -432,7 +432,7 @@ export class OfflineCharacterDB {
     try {
       await done;
     } catch (error) {
-      throw operationError || dbError(error);
+      throw dbError(operationError || error);
     }
     return this.loadCharacterSave(id);
   }
