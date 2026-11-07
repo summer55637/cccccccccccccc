@@ -197,45 +197,7 @@ export async function runStorageRecoveryTests({ browser, baseUrl, onLog = () => 
     ]);
 
     const termination = await workerPage.evaluate(async dbName => {
-      const workerSource = \`
-        self.onmessage = event => {
-          const request = indexedDB.open(event.data, 1);
-          request.onupgradeneeded = () => {
-            request.result.createObjectStore("checkpoint", { keyPath: "key" });
-            request.result.createObjectStore("pendingWrites", { keyPath: "id" });
-          };
-          request.onerror = () => self.postMessage({ type: "error", stage: "open" });
-          request.onsuccess = () => {
-            const database = request.result;
-            const baseline = database.transaction("checkpoint", "readwrite");
-            baseline.objectStore("checkpoint").put({
-              key: "current",
-              value: "last-good-save",
-            });
-            baseline.oncomplete = () => {
-              const transaction = database.transaction(
-                ["checkpoint", "pendingWrites"],
-                "readwrite",
-              );
-              transaction.objectStore("checkpoint").put({
-                key: "current",
-                value: "must-not-commit",
-              });
-              const store = transaction.objectStore("pendingWrites");
-              const payload = "x".repeat(4096);
-              for (let id = 0; id < 3000; id += 1) {
-                store.put({ id, payload });
-              }
-              self.postMessage({ type: "queued", count: 3000 });
-
-              // Keep this worker task alive so the parent can terminate its context
-              // before IndexedDB finishes dispatching the queued request events.
-              const deadline = Date.now() + 30000;
-              while (Date.now() < deadline) { /* intentional termination window */ }
-            };
-          };
-        };
-      \`;
+      const workerSource = "\nself.onmessage = event => {\n  const request = indexedDB.open(event.data, 1);\n  request.onupgradeneeded = () => {\n    request.result.createObjectStore(\"checkpoint\", { keyPath: \"key\" });\n    request.result.createObjectStore(\"pendingWrites\", { keyPath: \"id\" });\n  };\n  request.onerror = () => self.postMessage({ type: \"error\", stage: \"open\" });\n  request.onsuccess = () => {\n    const database = request.result;\n    const baseline = database.transaction(\"checkpoint\", \"readwrite\");\n    baseline.objectStore(\"checkpoint\").put({\n      key: \"current\",\n      value: \"last-good-save\",\n    });\n    baseline.oncomplete = () => {\n      const transaction = database.transaction(\n        [\"checkpoint\", \"pendingWrites\"],\n        \"readwrite\",\n      );\n      transaction.objectStore(\"checkpoint\").put({\n        key: \"current\",\n        value: \"must-not-commit\",\n      });\n      const store = transaction.objectStore(\"pendingWrites\");\n      const payload = \"x\".repeat(4096);\n      for (let id = 0; id < 3000; id += 1) {\n        store.put({ id, payload });\n      }\n      self.postMessage({ type: \"queued\", count: 3000 });\n\n      // Keep this worker task alive until the parent terminates its context.\n      const deadline = Date.now() + 30000;\n      while (Date.now() < deadline) { /* intentional termination window */ }\n    };\n  };\n};\n";
       const workerUrl = URL.createObjectURL(new Blob([workerSource], {
         type: "text/javascript",
       }));
