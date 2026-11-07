@@ -38,6 +38,20 @@ function assertInsideViewport(page, selector, label) {
   });
 }
 
+async function waitUntilReady(page, label) {
+  await page.waitForFunction(() => {
+    const state = document.documentElement.dataset.ready;
+    return state === "true" || state === "error" || state === "empty";
+  }, { timeout: 30000 });
+  const readiness = await page.evaluate(() => ({
+    state: document.documentElement.dataset.ready || "missing",
+    status: document.querySelector("#gameStatus")?.textContent ||
+      document.querySelector("#appStatus")?.textContent || "",
+  }));
+  assert.equal(readiness.state, "true",
+    label + " 初始化失敗：" + readiness.state + "；" + readiness.status);
+}
+
 export async function runMobileUITests({ browser, baseUrl, onLog = () => {} }) {
   let passed = 0;
   for (const viewport of VIEWPORTS) {
@@ -47,7 +61,6 @@ export async function runMobileUITests({ browser, baseUrl, onLog = () => {} }) {
       deviceScaleFactor: 2,
       isMobile: true,
       hasTouch: true,
-      serviceWorkers: "block",
     });
     const page = await context.newPage();
     const pageErrors = [];
@@ -69,7 +82,7 @@ export async function runMobileUITests({ browser, baseUrl, onLog = () => {} }) {
         timeout: 30000,
       });
       assert.equal(lobbyResponse?.status(), 200, viewport.label + " 角色管理頁必須載入成功");
-      await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+      await waitUntilReady(page, viewport.label + " 角色管理頁");
       await assertNoHorizontalOverflow(page, viewport.label + " 角色管理頁");
       await assertInsideViewport(page, "#characterName", viewport.label + " 角色名稱輸入框");
 
@@ -88,17 +101,7 @@ export async function runMobileUITests({ browser, baseUrl, onLog = () => {} }) {
       await page.waitForURL(url => url.pathname.endsWith("/offline/game/index.html"), {
         timeout: 20000,
       });
-      await page.waitForFunction(() => {
-        const state = document.documentElement.dataset.ready;
-        return state === "true" || state === "error" || state === "empty";
-      }, { timeout: 15000 });
-      const readiness = await page.evaluate(() => ({
-        state: document.documentElement.dataset.ready || "missing",
-        status: document.querySelector("#gameStatus")?.textContent || "",
-        url: location.href,
-      }));
-      assert.equal(readiness.state, "true",
-        viewport.label + " 遊戲初始化失敗：" + readiness.state + "；" + readiness.status + "；" + readiness.url);
+      await waitUntilReady(page, viewport.label + " 遊戲主畫面");
       assert.equal(await page.locator("#characterName").textContent(), "行動裝置測試角色");
       await assertNoHorizontalOverflow(page, viewport.label + " 遊戲主畫面");
       await assertInsideViewport(page, "#worldGrid", viewport.label + " 遊戲地圖");
@@ -118,7 +121,7 @@ export async function runMobileUITests({ browser, baseUrl, onLog = () => {} }) {
       await assertNoHorizontalOverflow(page, viewport.label + " 觸控移動後");
 
       await page.reload({ waitUntil: "load", timeout: 30000 });
-      await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+      await waitUntilReady(page, viewport.label + " 遊戲重新載入");
       assert.equal(await page.locator("#positionText").textContent(), "8, 5",
         viewport.label + " 觸控移動後的位置必須保存");
       await assertNoHorizontalOverflow(page, viewport.label + " 重新載入後");
