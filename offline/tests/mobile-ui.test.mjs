@@ -5,6 +5,8 @@ const VIEWPORTS = [
   { width: 360, height: 800, label: "360×800 手機" },
   { width: 390, height: 844, label: "390×844 手機" },
   { width: 768, height: 1024, label: "768×1024 平板" },
+  { width: 844, height: 390, label: "844×390 手機橫向", landscape: true },
+  { width: 1024, height: 768, label: "1024×768 平板橫向", landscape: true },
 ];
 
 function assertNoHorizontalOverflow(page, label) {
@@ -86,6 +88,10 @@ export async function runMobileUITests({ browser, baseUrl, onLog = () => {} }) {
 
       const viewportMeta = await page.locator('meta[name="viewport"]').getAttribute("content");
       assert.match(viewportMeta || "", /width=device-width/, "頁面必須使用裝置寬度版面");
+      if (viewport.landscape) {
+        const landscape = await page.evaluate(() => window.matchMedia("(orientation: landscape)").matches);
+        assert.equal(landscape, true, viewport.label + " 必須正確套用橫向版面");
+      }
 
       await page.locator("#characterName").fill("行動裝置測試角色");
       await page.locator("#classId").selectOption("knight");
