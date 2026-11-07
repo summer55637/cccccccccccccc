@@ -35,7 +35,7 @@ async function waitForServer() {
 
 try {
   const boundaryResult = runOfflineBoundaryTests(repoRoot);
-  process.stdout.write("PASS：" + boundaryResult.passed + " offline boundary source files scanned\\n");
+  process.stdout.write("PASS：" + boundaryResult.passed + " offline boundary source files scanned\n");
   await waitForServer();
   browser = await chromium.launch({ headless: true });
 
