@@ -39,3 +39,14 @@
 修改快取資源清單或更新正式程式時，必須同步提高 `service-worker.js` 的 `CACHE_NAME` 版本，讓瀏覽器重新安裝完整快取。目前版本為 `offline-adventure-shell-v3`。
 
 目前是可操作的自製單機原型，尚未整合或使用現有 Cocos 成品。倉庫仍為 Private，尚未啟用公開部署。
+
+
+## 安全離線版打包
+
+在倉庫根目錄執行：
+
+```bash
+python offline/tools/build-release.py --output dist/offline-adventure-release.zip
+```
+
+打包器只收錄角色管理、遊戲、IndexedDB／備份模組、Service Worker、PWA manifest 與安裝圖示；不會把根目錄的 `server.js`、帳號資料、原始 Cocos 資源、測試檔或文件放進 ZIP。打包前會核對 Service Worker 預快取清單、PWA 圖示、外部網址及常見硬編碼憑證樣式，並在 ZIP 內寫入逐檔 SHA-256 清單。這個工具只產生離線版封裝，不會替倉庫公開部署，也不代表已完成素材授權或 Git 歷史清理。

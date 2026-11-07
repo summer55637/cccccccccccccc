@@ -36,6 +36,12 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Test safe offline release packaging
+        run: python offline/tests/release-package.test.py
+
+      - name: Build allowlisted offline release archive
+        run: python offline/tools/build-release.py --output "$RUNNER_TEMP/offline-adventure-release.zip"
+
       - name: Install Playwright
         working-directory: offline
         run: npm install --no-save --no-package-lock playwright
