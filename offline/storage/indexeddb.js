@@ -235,13 +235,22 @@ export class OfflineCharacterDB {
     this.indexedDB = indexedDB;
     this.db = null;
     this.opening = null;
+    this.connectionEpoch = 0;
   }
 
   async open() {
     if (this.db) return this.db;
     if (this.opening) return this.opening;
     if (!this.indexedDB?.open) throw new Error("目前瀏覽器不支援 IndexedDB，請使用 localhost 或 HTTPS。");
+
+    const connectionEpoch = this.connectionEpoch;
     this.opening = new Promise((resolve, reject) => {
+      let settled = false;
+      const fail = error => {
+        if (settled) return;
+        settled = true;
+        reject(dbError(error));
+      };
       const req = this.indexedDB.open(this.dbName, DB_VERSION);
       req.onupgradeneeded = () => {
         const db = req.result;
@@ -255,21 +264,43 @@ export class OfflineCharacterDB {
         }
         if (!db.objectStoreNames.contains(STORES.settings)) db.createObjectStore(STORES.settings, { keyPath: "key" });
       };
-      req.onerror = () => reject(dbError(req.error));
-      req.onblocked = () => reject(new Error("資料庫升級被其他分頁阻擋，請先關閉其他遊戲分頁。"));
+      req.onerror = () => fail(req.error || new Error("IndexedDB 開啟失敗。"));
+      req.onblocked = () => fail(new Error("資料庫升級被其他分頁阻擋，請先關閉其他遊戲分頁。"));
       req.onsuccess = () => {
-        this.db = req.result;
-        this.db.onversionchange = () => { this.close(); };
-        resolve(this.db);
+        const connection = req.result;
+        if (settled || connectionEpoch !== this.connectionEpoch) {
+          connection.close();
+          fail(new Error("資料庫連線在開啟期間已關閉，請重新操作。"));
+          return;
+        }
+
+        this.db = connection;
+        connection.onversionchange = () => {
+          if (this.db === connection) this.close();
+          else connection.close();
+        };
+        connection.addEventListener?.("close", () => {
+          if (this.db === connection) {
+            this.db = null;
+            this.opening = null;
+            this.connectionEpoch += 1;
+          }
+        });
+        settled = true;
+        resolve(connection);
       };
-    }).catch(error => { this.opening = null; throw error; });
+    }).catch(error => {
+      if (connectionEpoch === this.connectionEpoch) this.opening = null;
+      throw error;
+    });
     return this.opening;
   }
-
   close() {
-    this.db?.close();
+    this.connectionEpoch += 1;
+    const connection = this.db;
     this.db = null;
     this.opening = null;
+    connection?.close();
   }
 
   async createCharacter(input) {
