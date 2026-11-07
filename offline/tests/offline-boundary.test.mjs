@@ -25,6 +25,20 @@ const SECRET_PATTERNS = [
   ["hard-coded credential assignment", /\b(?:api[_-]?key|client[_-]?secret|password|passwd|token|access[_-]?token|refresh[_-]?token|session[_-]?token|private[_-]?key|encryption[_-]?key|secret)\b\s*[:=]\s*(["'])([^"']{16,})\1/gi],
 ];
 
+const SECRET_PATTERN_FIXTURES = [
+  ["private key material", "-----BEGIN PRIVATE KEY-----"],
+  ["GitHub personal access token", "ghp_" + "A".repeat(36)],
+  ["AWS access key ID", "AKIA" + "A".repeat(16)],
+  ["JWT", "eyJ" + "a".repeat(20) + "." + "b".repeat(20) + "." + "c".repeat(20)],
+  ["hard-coded credential assignment", 'const apiKey = "fixture-only-not-a-real-secret-123456";'],
+];
+for (const [patternName, fixture] of SECRET_PATTERN_FIXTURES) {
+  const pattern = SECRET_PATTERNS.find(([name]) => name === patternName)?.[1];
+  assert.ok(pattern, "機密掃描規則不存在：" + patternName);
+  pattern.lastIndex = 0;
+  assert.ok(pattern.test(fixture), "機密掃描規則未能辨識測試樣本：" + patternName);
+}
+
 function collectSourceFiles(root, directory) {
   const absolute = join(root, directory);
   return readdirSync(absolute).flatMap(name => {
