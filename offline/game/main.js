@@ -441,6 +441,10 @@ async function refreshSkillDisplay() {
 }
 async function requestSkillAction(action, skillId, slot = null) {
   if (!character || skillBusy) return;
+  if (action === "cast") {
+    await requestCastSkill(skillId);
+    return;
+  }
   skillBusy = true;
   try {
     if (action === "learn") {
@@ -449,9 +453,6 @@ async function requestSkillAction(action, skillId, slot = null) {
     } else if (action === "assign") {
       await assignSkillShortcut(database, character.characterId, skillId, slot);
       setStatus("已將「" + getSkillDefinition(skillId).name + "」放入快捷欄 " + slot + "。", "success");
-    } else if (action === "cast") {
-      await requestCastSkill(skillId);
-      return;
     }
     await refreshSkillDisplay();
   } catch (error) {
@@ -462,7 +463,8 @@ async function requestSkillAction(action, skillId, slot = null) {
   }
 }
 async function requestCastSkill(skillId) {
-  if (!character) return;
+  if (!character || skillBusy) return;
+  skillBusy = true;
   const skill = getSkillDefinition(skillId);
   const target = monsters
     .filter(monster => monster.hp > 0 && monster.distance <= skill.range)
