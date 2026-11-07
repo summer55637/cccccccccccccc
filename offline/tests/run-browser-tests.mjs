@@ -232,7 +232,7 @@ try {
     baseUrl,
     onLog: line => process.stdout.write(line + "\n"),
   });
-  process.stdout.write("PASS：" + storageRecoveryResult.passed + " storage quota and abrupt-close recovery checks\n");
+  process.stdout.write("PASS：" + storageRecoveryResult.passed + " storage quota and interruption recovery checks\n");
   process.stdout.write("\nPASS：All offline character browser tests\n");
 } catch (error) {
   process.stderr.write("\nFAIL：" + (error?.stack || error) + "\n");
