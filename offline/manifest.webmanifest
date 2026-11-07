@@ -1,0 +1,35 @@
+{
+  "id": "./",
+  "name": "單機冒險世界",
+  "short_name": "單機冒險",
+  "description": "不連接遊戲伺服器的單機冒險原型。",
+  "lang": "zh-Hant",
+  "dir": "ltr",
+  "start_url": "./character/ui/index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#111923",
+  "theme_color": "#151c25",
+  "categories": [
+    "games"
+  ],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

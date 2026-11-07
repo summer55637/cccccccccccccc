@@ -1,4 +1,4 @@
-const CACHE_NAME = "offline-adventure-shell-v1";
+const CACHE_NAME = "offline-adventure-shell-v2";
 const PRECACHE_ASSETS = [
   "./character/ui/index.html",
   "./character/ui/styles.css",
@@ -21,6 +21,9 @@ const PRECACHE_ASSETS = [
   "./game/skills/service.js",
   "./storage/indexeddb.js",
   "./storage/backup.js",
+  "./manifest.webmanifest",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
 ];
 
 function assetUrl(path) {

@@ -26,7 +26,7 @@ export async function runServiceWorkerTests({ browser, baseUrl, onLog = () => {}
         });
       }
       const cacheNames = await caches.keys();
-      const cacheName = cacheNames.find(name => name === "offline-adventure-shell-v1");
+      const cacheName = cacheNames.find(name => name === "offline-adventure-shell-v2");
       if (!cacheName) throw new Error("找不到已安裝的單機版快取。");
       const cache = await caches.open(cacheName);
       const entries = await cache.keys();
@@ -39,7 +39,50 @@ export async function runServiceWorkerTests({ browser, baseUrl, onLog = () => {}
     });
     assert.ok(workerState.scope.endsWith("/offline/"), "Service Worker 範圍必須限制在 /offline/ 子目錄");
     assert.equal(workerState.controlled, true, "Service Worker 必須接管角色管理頁");
-    assert.ok(workerState.entryCount >= 21, "必須預先快取遊戲頁面與所有執行模組");
+    assert.ok(workerState.entryCount >= 24, "必須預先快取遊戲頁面、PWA manifest、圖示與所有執行模組");
+
+    const pwaState = await page.evaluate(async () => {
+      const manifestLink = document.querySelector('link[rel="manifest"]');
+      const appleIconLink = document.querySelector('link[rel="apple-touch-icon"]');
+      const installMeta = document.querySelector('meta[name="apple-mobile-web-app-capable"]');
+      if (!manifestLink || !appleIconLink || installMeta?.content !== "yes") {
+        throw new Error("角色管理頁缺少 PWA／iOS 主畫面安裝設定。");
+      }
+      const manifestUrl = new URL(manifestLink.href);
+      const response = await fetch(manifestUrl);
+      if (!response.ok) throw new Error("PWA manifest 無法讀取：" + response.status);
+      const manifest = await response.json();
+      const icons = await Promise.all(manifest.icons.map(async icon => {
+        const iconUrl = new URL(icon.src, manifestUrl);
+        const iconResponse = await fetch(iconUrl);
+        if (!iconResponse.ok) throw new Error("PWA 圖示無法讀取：" + icon.src);
+        const bitmap = await createImageBitmap(await iconResponse.blob());
+        return {src: icon.src, width: bitmap.width, height: bitmap.height};
+      }));
+      return {
+        manifestUrl: manifestUrl.href,
+        name: manifest.name,
+        startUrl: new URL(manifest.start_url, manifestUrl).pathname,
+        scope: new URL(manifest.scope, manifestUrl).pathname,
+        display: manifest.display,
+        appleIcon: new URL(appleIconLink.href).pathname,
+        icons,
+      };
+    });
+    assert.equal(pwaState.name, "單機冒險世界", "PWA 名稱需正確");
+    assert.ok(pwaState.startUrl.endsWith("/offline/character/ui/index.html"),
+      "安裝後應開啟角色管理入口");
+    assert.ok(pwaState.scope.endsWith("/offline/"), "PWA 範圍必須限制在 /offline/");
+    assert.equal(pwaState.display, "standalone", "安裝後應以獨立視窗顯示");
+    assert.equal(pwaState.icons.length, 2, "必須有兩種安裝圖示尺寸");
+    assert.deepEqual(
+      pwaState.icons.map(icon => [icon.width, icon.height]).sort((a,b)=>a[0]-b[0]),
+      [[192,192],[512,512]],
+      "PWA 圖示實際尺寸必須符合 manifest 宣告"
+    );
+    assert.ok(pwaState.appleIcon.endsWith("/offline/icons/icon-192.png"),
+      "iOS 主畫面圖示必須指向本機圖檔");
+    onLog("PASS：PWA manifest、192／512 圖示、iOS 主畫面標記及離線快取");
     onLog("PASS：Service Worker 安裝並預快取 " + workerState.entryCount + " 個本機資源");
 
     await page.locator("#characterName").fill("離線勇者");
@@ -67,7 +110,7 @@ export async function runServiceWorkerTests({ browser, baseUrl, onLog = () => {}
     onLog("PASS：斷網後角色管理頁仍可開啟並讀取角色");
 
     assert.deepEqual(errors, [], "Service Worker 測試發生 JavaScript 錯誤：" + errors.join("; "));
-    return { passed: 3 };
+    return { passed: 4 };
   } finally {
     await context.close();
   }

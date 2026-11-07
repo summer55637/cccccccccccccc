@@ -7,7 +7,7 @@ const SOURCE_ROOTS = [
   "offline/game",
   "offline/storage",
 ];
-const SOURCE_FILES = ["offline/service-worker.js"];
+const SOURCE_FILES = ["offline/service-worker.js", "offline/manifest.webmanifest"];
 const SOURCE_EXTENSIONS = new Set([".js", ".html", ".css"]);
 const NETWORK_APIS = [
   ["fetch()", /\bfetch\s*\(/i],
@@ -100,6 +100,9 @@ export function runOfflineBoundaryTests(repositoryRoot = process.cwd()) {
     "./character/ui/app.js",
     "./game/main.js",
     "./storage/indexeddb.js",
+    "./manifest.webmanifest",
+    "./icons/icon-192.png",
+    "./icons/icon-512.png",
   ]) {
     if (!worker.includes(JSON.stringify(asset))) {
       violations.push("離線快取清單缺少必要資源：" + asset);
