@@ -42,7 +42,7 @@ backup-ui.test.mjs 驗證完整 JSON 匯出及還原流程：
 - 無效 JSON 會被拒絕，且不會改動原有存檔。
 - 不連線任何外部服務。
 
-## GitHub Actions
+離線邊界掃描除了檢查禁止的連網 API、外部網址與 HTML 外部資源，也會掃描 22 個正式離線程式檔中的私鑰區塊、常見 GitHub／AWS 憑證格式、JWT 外觀字串及常見機密欄位的長字串常值。此掃描只涵蓋離線正式程式檔，不代表已清除 Git 歷史、原始伺服器檔或素材包中的既有機密。\n\n## GitHub Actions
 
 推送到 offline/local-character-system 分支的 offline/** 檔案變更時，GitHub Actions 會安裝 Chromium 並執行 offline/tests/run-browser-tests.mjs。流程會依序執行 IndexedDB、角色管理介面與戰鬥／背包／技能整合、地圖移動、怪物戰鬥、背包與裝備、職業技能、角色成長及備份／還原測試。
 
