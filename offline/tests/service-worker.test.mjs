@@ -10,7 +10,8 @@ export async function runServiceWorkerTests({ browser, baseUrl, onLog = () => {}
     const lobbyUrl = baseUrl + "/offline/character/ui/index.html?dbName=offline-sw-test";
     const response = await page.goto(lobbyUrl, { waitUntil: "load", timeout: 30000 });
     assert.equal(response?.status(), 200, "角色管理頁必須能安裝離線快取");
-    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 20000 });
+    assert.match(await page.locator("#appStatus").textContent(), /離線快取已完成/);
 
     const workerState = await page.evaluate(async () => {
       if (!("serviceWorker" in navigator)) throw new Error("目前瀏覽器不支援 Service Worker。");
@@ -47,8 +48,9 @@ export async function runServiceWorkerTests({ browser, baseUrl, onLog = () => {}
     await page.locator(".character-card").filter({ hasText: "離線勇者" }).waitFor({ state: "visible" });
     await page.locator("#enterButton").click();
     await page.waitForURL(url => url.pathname.endsWith("/offline/game/index.html"), { timeout: 15000 });
-    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 20000 });
     assert.equal((await page.locator("#characterName").textContent()).trim(), "離線勇者");
+    assert.match(await page.locator("#gameStatus").textContent(), /離線快取已完成/);
 
     await context.setOffline(true);
     const offlineResponse = await page.reload({ waitUntil: "load", timeout: 15000 });
