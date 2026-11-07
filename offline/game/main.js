@@ -439,6 +439,13 @@ async function refreshSkillDisplay() {
   const book = await getSkillBook(database, character.characterId);
   renderSkillBook(book);
 }
+async function refreshSkillDisplaySafely() {
+  try {
+    await refreshSkillDisplay();
+  } catch (error) {
+    setStatus(error?.message || "無法更新技能介面。", "error");
+  }
+}
 async function requestSkillAction(action, skillId, slot = null) {
   if (!character || skillBusy) return;
   if (action === "cast") {
@@ -454,19 +461,17 @@ async function requestSkillAction(action, skillId, slot = null) {
       await assignSkillShortcut(database, character.characterId, skillId, slot);
       setStatus("已將「" + getSkillDefinition(skillId).name + "」放入快捷欄 " + slot + "。", "success");
     }
-    await refreshSkillDisplay();
   } catch (error) {
     setStatus(error?.message || "技能操作失敗。", "error");
   } finally {
     skillBusy = false;
-    await refreshSkillDisplay();
+    await refreshSkillDisplaySafely();
   }
 }
 async function requestCastSkill(skillId) {
   if (!character || skillBusy) return;
   skillBusy = true;
   try {
-    await refreshSkillDisplay();
     const skill = getSkillDefinition(skillId);
     const target = monsters
       .filter(monster => monster.hp > 0 && monster.distance <= skill.range)
@@ -480,7 +485,6 @@ async function requestCastSkill(skillId) {
     await refreshCombatDisplay();
     renderCharacter(character);
     await refreshInventoryDisplay();
-    await refreshSkillDisplay();
 
     let message = result.hit
       ? "施放「" + result.skillName + "」，對 " + target.name + " 造成 " + result.damage + " 點傷害。"
@@ -499,7 +503,7 @@ async function requestCastSkill(skillId) {
     setStatus(error?.message || "技能施放失敗。", "error");
   } finally {
     skillBusy = false;
-    await refreshSkillDisplay();
+    await refreshSkillDisplaySafely();
   }
 }
 async function requestInventoryAction(action, value) {
