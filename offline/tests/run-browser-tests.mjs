@@ -228,7 +228,7 @@ try {
   });
   process.stdout.write("PASS：" + serviceWorkerResult.passed + " offline service worker checks\n");
   const storageRecoveryResult = await runStorageRecoveryTests({
-    chromium,
+    browser,
     baseUrl,
     onLog: line => process.stdout.write(line + "\n"),
   });
