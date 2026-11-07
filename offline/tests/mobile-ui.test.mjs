@@ -21,35 +21,19 @@ function assertNoHorizontalOverflow(page, label) {
   });
 }
 
-function assertInsideViewport(page, selector, label) {
-  return page.locator(selector).boundingBox().then(box => {
-    assert.ok(box, label + " 必須有可見的版面位置");
-    return page.evaluate(({ box }) => ({
-      width: window.innerWidth,
-      height: window.innerHeight,
-      right: box.x + box.width,
-      bottom: box.y + box.height,
-    }), { box }).then(viewport => {
-      assert.ok(box.x >= -1 && box.y >= -1, label + " 不可超出可視區左側或上方");
-      assert.ok(viewport.right <= viewport.width + 1, label + " 不可超出可視區右側");
-      assert.ok(viewport.bottom <= viewport.height + 1 || box.y < viewport.height,
-        label + " 必須可透過垂直捲動觸及");
-    });
-  });
-}
-
-async function waitUntilReady(page, label) {
-  await page.waitForFunction(() => {
-    const state = document.documentElement.dataset.ready;
-    return state === "true" || state === "error" || state === "empty";
-  }, { timeout: 30000 });
-  const readiness = await page.evaluate(() => ({
-    state: document.documentElement.dataset.ready || "missing",
-    status: document.querySelector("#gameStatus")?.textContent ||
-      document.querySelector("#appStatus")?.textContent || "",
+async function assertInsideViewport(page, selector, label) {
+  const element = page.locator(selector);
+  await element.scrollIntoViewIfNeeded();
+  const box = await element.boundingBox();
+  assert.ok(box, label + " 必須有可見的版面位置");
+  const viewport = await page.evaluate(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
   }));
-  assert.equal(readiness.state, "true",
-    label + " 初始化失敗：" + readiness.state + "；" + readiness.status);
+  assert.ok(box.x >= -1 && box.y >= -1, label + " 不可超出可視區左側或上方");
+  assert.ok(box.x + box.width <= viewport.width + 1, label + " 不可超出可視區右側");
+  assert.ok(box.y < viewport.height && box.y + box.height > 0,
+    label + " 捲動後必須進入可視區");
 }
 
 export async function runMobileUITests({ browser, baseUrl, onLog = () => {} }) {
