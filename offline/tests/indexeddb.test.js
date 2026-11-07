@@ -105,20 +105,22 @@ export async function runIndexedDBTests({ onLog = () => {} } = {}) {
     assert(quotaMessage === "瀏覽器儲存空間不足。", "儲存配額錯誤應轉成清楚提示");
     pass("瀏覽器儲存配額錯誤會顯示可理解的提示");
 
-    await db.saveCharacterData(created.characterId, {
+    const guardedCharacter = await db.createCharacter({ name: "大小限制測試", classId: "knight" });
+    await db.saveCharacterData(guardedCharacter.characterId, {
       inventory: { capacity: 80, items: [{ itemId: "test-potion", count: 5 }] },
     });
     let oversizedRejected = false;
     try {
-      await db.saveCharacterData(created.characterId, {
+      await db.saveCharacterData(guardedCharacter.characterId, {
         inventory: { capacity: 80, items: [], note: "x".repeat(1_000_010) },
       });
     } catch (error) {
       oversizedRejected = /太大/.test(error.message);
     }
-    const preservedSave = await db.loadCharacterSave(created.characterId);
+    const preservedSave = await db.loadCharacterSave(guardedCharacter.characterId);
     assert(oversizedRejected, "超過資料大小限制的存檔必須拒絕");
     assert(preservedSave.inventory.items[0].count === 5, "拒絕大資料時不可破壞原有背包");
+    assert(await db.deleteCharacter(guardedCharacter.characterId), "清理大小限制測試角色");
     pass("拒絕超過 1 MB 的存檔資料並保留原有資料");
 
     const stressStartedAt = performance.now();
