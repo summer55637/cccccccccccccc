@@ -212,6 +212,32 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     });
     assert.equal(await fireboltCastButton.isEnabled(), true, "藍色藥水恢復 MP 後技能施放按鈕應重新啟用");
 
+    await page.evaluate(async ({ name, id }) => {
+      const { OfflineCharacterDB } = await import("/offline/storage/indexeddb.js");
+      const database = new OfflineCharacterDB({ dbName: name });
+      try {
+        const character = await database.getCharacter(id);
+        await database.updateCharacter(id, {
+          hp: { current: 0, max: character.hp.max },
+        });
+      } finally {
+        database.close();
+      }
+    }, { name: dbName, id: characterId });
+    await page.reload({ waitUntil: "load" });
+    await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+    assert.match(await page.locator("#hpText").textContent(), /^0 \/ 112$/);
+    assert.equal(await page.locator('.skill-card[data-skill-id="firebolt"] button[data-skill-action="cast"]').isEnabled(), false);
+    const revivePotion = page.locator('.inventory-card[data-item-id="red-potion"]');
+    await revivePotion.locator('button[data-inventory-action="use"]').click();
+    await page.locator("#adventureMessage").filter({ hasText: "恢復 30 HP" }).waitFor();
+    assert.match(await page.locator("#hpText").textContent(), /^30 \/ 112$/);
+    await page.waitForFunction(() => {
+      const button = document.querySelector('.skill-card[data-skill-id="firebolt"] button[data-skill-action="cast"]');
+      return button && !button.disabled;
+    });
+    logPass(onLog, "HP 歸零時停用技能，使用紅藥水復活後恢復施放功能");
+
     await page.locator('.inventory-card[data-item-id="iron-sword"] button[data-inventory-action="equip"]').click();
     await page.locator("#equipmentSlots").filter({ hasText: "鐵劍" }).waitFor();
     await page.locator('.inventory-card[data-item-id="leather-armor"] button[data-inventory-action="equip"]').click();
@@ -296,7 +322,7 @@ export async function runCharacterUITests({ browser, baseUrl, onLog = () => {} }
     assert.deepEqual(pageErrors, [], `角色 UI 發生 JavaScript 錯誤：${pageErrors.join("; ")}`);
     assert.deepEqual(externalRequests, [], `角色 UI 不應連線外部服務：${externalRequests.join("; ")}`);
     onLog("PASS：角色 UI 建立、編輯、選擇、重新載入及刪除測試");
-    return { passed: 13, failed: 0 };
+    return { passed: 14, failed: 0 };
   } finally {
     await page.close();
     cleanupPage = await browser.newPage();
