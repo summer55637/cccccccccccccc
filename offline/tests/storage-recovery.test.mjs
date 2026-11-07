@@ -38,10 +38,12 @@ export async function runStorageRecoveryTests({ browser, baseUrl, onLog = () => 
     onLog("PASS：啟用隔離來源的 Chromium IndexedDB 配額限制");
 
     const quotaResult = await page.evaluate(async characterId => {
-      const items = Array.from({ length: 4200 }, (_, index) => ({
-        itemId: "quota-" + String(index).padStart(4, "0") + "-" + "x".repeat(88),
-        count: 1,
-      }));
+      const items = Array.from({ length: 5000 }, (_, index) => {
+        const bytes = new Uint8Array(63);
+        crypto.getRandomValues(bytes);
+        const token = Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+        return { itemId: "q" + token, count: 1 };
+      });
       const serializedLength = JSON.stringify({ capacity: 100, items }).length;
       try {
         await window.__quotaTestDatabase.updateCharacterAndSaveData(characterId, { level: 2 }, {
@@ -53,7 +55,7 @@ export async function runStorageRecoveryTests({ browser, baseUrl, onLog = () => 
       }
     }, setup.characterId);
     assert.ok(quotaResult.serializedLength < 1_000_000, "測試資料必須低於應用程式本身的 1 MB 輸入限制");
-    assert.equal(quotaResult.succeeded, false, "降低儲存配額後的大型寫入必須失敗");
+    assert.equal(quotaResult.succeeded, false, "降低儲存配額後的大型寫入必須失敗（資料 " + quotaResult.serializedLength + " bytes；quota " + quotaAfter.quota + " bytes；usage " + quotaAfter.usage + " bytes）");
     assert.equal(quotaResult.message, "瀏覽器儲存空間不足。", "QuotaExceededError 必須轉成清楚的繁體中文訊息");
     const preserved = await page.evaluate(characterId =>
       window.__quotaTestDatabase.loadCharacterSave(characterId), setup.characterId);
