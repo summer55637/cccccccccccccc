@@ -7,6 +7,7 @@ const SOURCE_ROOTS = [
   "offline/game",
   "offline/storage",
 ];
+const SOURCE_FILES = ["offline/service-worker.js"];
 const SOURCE_EXTENSIONS = new Set([".js", ".html", ".css"]);
 const NETWORK_APIS = [
   ["fetch()", /\bfetch\s*\(/i],
@@ -14,7 +15,6 @@ const NETWORK_APIS = [
   ["WebSocket", /\bWebSocket\b/i],
   ["EventSource", /\bEventSource\b/i],
   ["sendBeacon()", /\bsendBeacon\s*\(/i],
-  ["Service Worker registration", /\bnavigator\s*\.\s*serviceWorker\s*\.\s*register\s*\(/i],
 ];
 const REMOTE_REFERENCE = /https?:\/\/|(?:^|["'=\s(])\/\/[a-z0-9.-]+\.[a-z]{2,}(?:[:/"']|$)/i;
 
@@ -33,7 +33,10 @@ function collectSourceFiles(root, directory) {
 }
 
 export function runOfflineBoundaryTests(repositoryRoot = process.cwd()) {
-  const files = SOURCE_ROOTS.flatMap(directory => collectSourceFiles(repositoryRoot, directory));
+  const files = [
+    ...SOURCE_ROOTS.flatMap(directory => collectSourceFiles(repositoryRoot, directory)),
+    ...SOURCE_FILES.map(path => join(repositoryRoot, path)),
+  ];
   assert.ok(files.length >= 10, "離線正式程式檔案數量異常，請確認掃描路徑。");
 
   const violations = [];
@@ -60,6 +63,23 @@ export function runOfflineBoundaryTests(repositoryRoot = process.cwd()) {
         }
       }
     }
+  }
+
+  const workerPath = join(repositoryRoot, "offline/service-worker.js");
+  const worker = readFileSync(workerPath, "utf8");
+  for (const asset of [
+    "./character/ui/index.html",
+    "./game/index.html",
+    "./character/ui/app.js",
+    "./game/main.js",
+    "./storage/indexeddb.js",
+  ]) {
+    if (!worker.includes(JSON.stringify(asset))) {
+      violations.push("離線快取清單缺少必要資源：" + asset);
+    }
+  }
+  if (!/cache\.addAll\s*\(/i.test(worker) || !/event\.respondWith\s*\(/i.test(worker)) {
+    violations.push("Service Worker 缺少安裝預快取或離線回應處理。");
   }
 
   assert.deepEqual(
