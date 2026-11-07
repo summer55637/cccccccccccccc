@@ -17,6 +17,13 @@ const NETWORK_APIS = [
   ["sendBeacon()", /\bsendBeacon\s*\(/i],
 ];
 const REMOTE_REFERENCE = /https?:\/\/|(?:^|["'=\s(])\/\/[a-z0-9.-]+\.[a-z]{2,}(?:[:/"']|$)/i;
+const SECRET_PATTERNS = [
+  ["private key material", /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/i],
+  ["GitHub personal access token", /\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/],
+  ["AWS access key ID", /\bAKIA[0-9A-Z]{16}\b/],
+  ["JWT", /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/],
+  ["hard-coded credential assignment", /\b(?:api[_-]?key|client[_-]?secret|password|passwd|token|access[_-]?token|refresh[_-]?token|session[_-]?token|private[_-]?key|encryption[_-]?key|secret)\b\s*[:=]\s*(["'])([^"']{16,})\1/gi],
+];
 
 function collectSourceFiles(root, directory) {
   const absolute = join(root, directory);
@@ -46,6 +53,12 @@ export function runOfflineBoundaryTests(repositoryRoot = process.cwd()) {
 
     for (const [api, pattern] of NETWORK_APIS) {
       if (pattern.test(content)) violations.push(label + " 使用連網 API：" + api);
+    }
+    for (const [secretType, pattern] of SECRET_PATTERNS) {
+      pattern.lastIndex = 0;
+      if (pattern.test(content)) {
+        violations.push(label + " 疑似包含硬編碼機密：" + secretType);
+      }
     }
     if (REMOTE_REFERENCE.test(content)) {
       violations.push(label + " 含有外部 HTTP 或 protocol-relative URL。");
