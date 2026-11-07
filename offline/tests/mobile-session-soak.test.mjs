@@ -117,10 +117,10 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
       const startTime = Date.now();
       let moves = 0;
 
-      // 10 round trips per checkpoint = 20 actual touch moves.
+      // 20 round trips per checkpoint = 40 actual touch moves.
       // The test stays on the clear (9,5) <-> (10,5) corridor.
       for (let checkpoint = 1; checkpoint <= 3; checkpoint += 1) {
-        for (let cycle = 0; cycle < 10; cycle += 1) {
+        for (let cycle = 0; cycle < 20; cycle += 1) {
           for (const step of [
             { direction: "right", position: "10, 5" },
             { direction: "left", position: "9, 5" },
@@ -155,10 +155,10 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
       // One more round trip after the final reload proves the controls remain responsive.
       await page.locator('#movementControls button[data-move="right"]').tap();
       await page.waitForFunction(() => document.querySelector("#positionText")?.textContent === "10, 5",
-        { timeout: 5000 });
+        null, { timeout: 5000 });
       await page.locator('#movementControls button[data-move="left"]').tap();
       await page.waitForFunction(() => document.querySelector("#positionText")?.textContent === "9, 5",
-        { timeout: 5000 });
+        null, { timeout: 5000 });
       moves += 2;
 
       const finalSave = await readSavedPosition(page, dbName, characterId);
@@ -168,12 +168,12 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
       assert.deepEqual(externalRequests, [],
         profile.label + " 長時操作出現外部網路請求：" + externalRequests.join("; "));
       assert.ok(Date.now() - startTime < 120000,
-        profile.label + " 120 次觸控操作及存檔檢查不應超過 120 秒");
+        profile.label + " 122 次觸控操作及存檔檢查不應超過 120 秒");
 
       totalMoves += moves;
       passed += 1;
       onLog("PASS：" + profile.label + " " + moves +
-        " 次方向觸控、" + (checkpointCount = 3) + " 次重新載入；座標及 IndexedDB 一致" +
+        " 次方向觸控、3 次重新載入；座標及 IndexedDB 一致" +
         "；最慢操作 " + Math.max(0, ...slowMoves.map(item => item.elapsed)) + " ms");
     } finally {
       await context.close();
