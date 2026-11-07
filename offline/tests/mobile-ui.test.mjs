@@ -36,6 +36,20 @@ async function assertInsideViewport(page, selector, label) {
     label + " 捲動後必須進入可視區");
 }
 
+async function waitUntilReady(page, label) {
+  await page.waitForFunction(() => {
+    const state = document.documentElement.dataset.ready;
+    return state === "true" || state === "error" || state === "empty";
+  }, { timeout: 30000 });
+  const readiness = await page.evaluate(() => ({
+    state: document.documentElement.dataset.ready || "missing",
+    status: document.querySelector("#gameStatus")?.textContent ||
+      document.querySelector("#appStatus")?.textContent || "",
+  }));
+  assert.equal(readiness.state, "true",
+    label + " 初始化失敗：" + readiness.state + "；" + readiness.status);
+}
+
 export async function runMobileUITests({ browser, baseUrl, onLog = () => {} }) {
   let passed = 0;
   for (const viewport of VIEWPORTS) {
