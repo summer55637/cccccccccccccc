@@ -48,6 +48,8 @@ backup-ui.test.mjs 驗證完整 JSON 匯出及還原流程：
 
 mobile-ui.test.mjs 以 Chromium 觸控裝置模式測試 320×640、360×800、390×844 手機、768×1024 直向平板，以及 844×390 手機橫向、1024×768 平板橫向。每種尺寸都驗證角色管理與遊戲主畫面不產生水平溢出、方向符合裝置寬高、地圖及方向盤可操作、方向按鈕具有足夠觸控尺寸、觸控移動可更新座標，且重新載入後位置仍保留。此為瀏覽器模擬測試，不取代真實 iOS／Android 裝置測試。
 
+mobile-session-soak.test.mjs 在手機直向與橫向各模擬 122 次方向觸控移動，分成三個存檔檢查點，穿插重新載入並比對畫面座標與 IndexedDB 最終資料；同步監看頁面 JavaScript／Console 錯誤、外部網路請求及操作回應時間。這是自動化瀏覽器壓力測試，不代表真機長時間效能結果。
+
 ## GitHub Actions
 
 推送到 offline/local-character-system 分支的 offline/** 檔案變更時，GitHub Actions 會安裝 Chromium 並執行 offline/tests/run-browser-tests.mjs。流程會依序執行 IndexedDB、角色管理介面與戰鬥／背包／技能整合、地圖移動、怪物戰鬥、背包與裝備、職業技能、角色成長及備份／還原測試。
