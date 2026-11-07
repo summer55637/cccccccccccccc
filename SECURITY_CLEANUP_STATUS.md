@@ -14,6 +14,16 @@ This document records the security-only changes on the `security/remove-exposed-
 - Removed `local_accounts.json` from the latest branch tree.
 - Added `.gitignore` rules for local account/session data, environment files, credential/token files, local databases, logs, dependencies, and generated build output.
 
+## Latest read-only repository audit (2026-11-07)
+
+The audit was performed against the four current branch heads without printing or copying any credential values into this report.
+
+- `main` and `backup/pre-security-cleanup-2026-11-06` still point to the original commit `d82d9675f9b304e09b582c768bb30be148b53871`. Both current trees still contain `local_accounts.json`.
+- The latest trees of `security/remove-exposed-credentials` and `offline/local-character-system` no longer contain `local_accounts.json`. The GitHub path-history query still reports its original commit `d82d9675f9b304e09b582c768bb30be148b53871`; deleting the file from a branch tip did not erase its historical Git object.
+- `server.js` is byte-identical across all four current branch heads. The previously identified hard-coded pack-encryption key, token wrapping/logging, permissive CORS and token-derived WebSocket fallback therefore remain present and unresolved.
+- A targeted scan of the 22 current offline production source files (`.js`, `.html`, `.css`) found no matches for private-key blocks, common GitHub/AWS token formats, JWT-shaped values, or long literal values assigned to common credential fields. This is a narrow source scan, not a full secret audit: it does not scan Git history, original asset packs, all other repository files, or deployment artifacts.
+- The offline CI now includes this targeted credential scan in `offline/tests/offline-boundary.test.mjs`. A clean result only means the scanned offline source set passed these patterns; it does not clear the known historical or `server.js` findings.
+
 ## Important: not yet resolved
 
 1. The earlier Git commit history still contains the removed account file. Removing a file from the latest tree does not erase it from Git history.
