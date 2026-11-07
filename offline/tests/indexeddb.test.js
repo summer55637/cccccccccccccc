@@ -109,6 +109,15 @@ export async function runIndexedDBTests({ onLog = () => {} } = {}) {
     assert(recoveredAfterAbort.inventory.items[0].count === 6, "中止後應可再次保存背包");
     pass("交易中止後可再次寫入並正常讀取存檔");
 
+    const previousConnection = db.db;
+    previousConnection.close();
+    previousConnection.dispatchEvent(new Event("close"));
+    assert(db.db === null, "資料庫連線關閉事件後必須清除舊連線");
+    const reconnectedList = await db.listCharacters();
+    assert(reconnectedList.some(item => item.characterId === created.characterId), "重新連線後應讀取原角色");
+    assert(db.db && db.db !== previousConnection, "下一次操作必須建立新的資料庫連線");
+    pass("資料庫連線關閉事件後，自動重新連線並保留存檔");
+
     const list = await db.listCharacters();
     assert(list.length === 1 && list[0].characterId === created.characterId, "角色清單應包含角色");
     pass("列出本機角色");
@@ -116,8 +125,8 @@ export async function runIndexedDBTests({ onLog = () => {} } = {}) {
     db.close();
     db = new OfflineCharacterDB({ dbName });
     const reopened = await db.loadCharacterSave(created.characterId);
-    assert(reopened?.character.level === 8, "重新開啟後應保留角色");
-    assert(reopened.inventory.items[0].itemId === "test-potion", "重新開啟後應保留背包");
+    assert(reopened?.character.level === 9, "重新開啟後應保留角色");
+    assert(reopened.inventory.items[0].itemId === "test-potion" && reopened.inventory.items[0].count === 6, "重新開啟後應保留最新背包");
     pass("關閉並重新開啟資料庫，確認存檔持續存在");
 
     assert(await db.deleteCharacter(created.characterId) === true, "刪除既有角色應回傳 true");
