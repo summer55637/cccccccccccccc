@@ -465,16 +465,16 @@ async function requestSkillAction(action, skillId, slot = null) {
 async function requestCastSkill(skillId) {
   if (!character || skillBusy) return;
   skillBusy = true;
-  const skill = getSkillDefinition(skillId);
-  const target = monsters
-    .filter(monster => monster.hp > 0 && monster.distance <= skill.range)
-    .sort((first, second) => first.distance - second.distance)[0];
-  if (!target) {
-    setStatus("技能範圍內沒有可攻擊的怪物。", "info");
-    return;
-  }
-  skillBusy = true;
   try {
+    await refreshSkillDisplay();
+    const skill = getSkillDefinition(skillId);
+    const target = monsters
+      .filter(monster => monster.hp > 0 && monster.distance <= skill.range)
+      .sort((first, second) => first.distance - second.distance)[0];
+    if (!target) {
+      setStatus("技能範圍內沒有可攻擊的怪物。", "info");
+      return;
+    }
     const result = await castSkill(database, character.characterId, skillId, target.spawnId);
     character = result.character;
     await refreshCombatDisplay();
