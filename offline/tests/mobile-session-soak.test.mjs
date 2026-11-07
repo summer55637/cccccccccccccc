@@ -116,7 +116,7 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
       assert.equal(await page.locator("#movementControls button[data-move]").count(), 4);
       const initialSave = await readSavedPosition(page, dbName, characterId);
       const initialUpdatedAt = initialSave.updatedAt;
-      const startTime = Date.now();
+      const startTime = performance.now();
       let moves = 0;
 
       // 20 round trips per checkpoint = 40 actual touch moves.
@@ -127,7 +127,7 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
             { direction: "right", position: "10, 5" },
             { direction: "left", position: "9, 5" },
           ]) {
-            const moveStartedAt = Date.now();
+            const moveStartedAt = performance.now();
             await page.locator('#movementControls button[data-move="' + step.direction + '"]').tap();
             await page.waitForFunction(expected => {
               const position = document.querySelector("#positionText")?.textContent;
@@ -135,7 +135,7 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
               const message = document.querySelector("#adventureMessage")?.textContent || "";
               return position === expected && status.includes("位置已自動保存") && message.includes(expected);
             }, step.position, { timeout: 5000 });
-            const elapsed = Date.now() - moveStartedAt;
+            const elapsed = performance.now() - moveStartedAt;
             if (elapsed > 2000) slowMoves.push({ move: moves + 1, elapsed });
             moves += 1;
           }
@@ -176,14 +176,14 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
         profile.label + " 長時操作有 JavaScript／Console 錯誤：" + pageErrors.join("; "));
       assert.deepEqual(externalRequests, [],
         profile.label + " 長時操作出現外部網路請求：" + externalRequests.join("; "));
-      assert.ok(Date.now() - startTime < 120000,
+      assert.ok(performance.now() - startTime < 120000,
         profile.label + " 122 次觸控操作及存檔檢查不應超過 120 秒");
 
       totalMoves += moves;
       passed += 1;
       onLog("PASS：" + profile.label + " " + moves +
         " 次方向觸控、3 次重新載入；座標及 IndexedDB 一致" +
-        "；最慢操作 " + Math.max(0, ...slowMoves.map(item => item.elapsed)) + " ms");
+        "；最慢操作 " + Math.max(0, ...slowMoves.map(item => item.elapsed)).toFixed(1) + " ms");
     } finally {
       await context.close();
       await deleteDatabase(browser, baseUrl, dbName);
