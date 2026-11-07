@@ -56,6 +56,44 @@ try {
     });
 
     try {
+      const databasePage = await context.newPage();
+      const databasePageErrors = [];
+      const databaseExternalRequests = [];
+      databasePage.on("pageerror", error => databasePageErrors.push(error.message));
+      databasePage.on("request", request => {
+        try {
+          const requestUrl = new URL(request.url());
+          if ((requestUrl.protocol === "http:" || requestUrl.protocol === "https:") &&
+              requestUrl.origin !== baseOrigin) {
+            databaseExternalRequests.push(request.url());
+          }
+        } catch {
+          // Non-HTTP requests are not remote web connections.
+        }
+      });
+      const databaseResponse = await databasePage.goto(
+        baseUrl + "/offline/tests/indexeddb-test.html",
+        { waitUntil: "load", timeout: 30000 },
+      );
+      assert.equal(databaseResponse?.status(), 200, target.name + " IndexedDB 測試頁必須載入成功");
+      await databasePage.locator("#run").click();
+      try {
+        await databasePage.locator("#status")
+          .filter({ hasText: "成功：17 項測試全部通過" })
+          .waitFor({ timeout: 60000 });
+      } catch (error) {
+        const statusText = await databasePage.locator("#status").textContent();
+        const testLog = await databasePage.locator("#log").textContent();
+        throw new Error(target.name + " IndexedDB 測試失敗。狀態：" + statusText +
+          "\\n測試紀錄：\\n" + testLog + "\\n原始錯誤：" + error.message);
+      }
+      const databaseLog = await databasePage.locator("#log").textContent();
+      assert.match(databaseLog || "", /全部通過：17 項測試/);
+      assert.deepEqual(databasePageErrors, [], target.name + " IndexedDB 發生 JavaScript 錯誤：" + databasePageErrors.join("; "));
+      assert.deepEqual(databaseExternalRequests, [], target.name + " IndexedDB 測試產生外部網路請求：" + databaseExternalRequests.join("; "));
+      process.stdout.write("PASS：" + target.name + " 17 項 IndexedDB 持續存檔與中斷復原測試\\n");
+      await databasePage.close();
+
       const lobbyUrl = baseUrl + "/offline/character/ui/index.html?dbName=" + encodeURIComponent(dbName);
       const lobbyResponse = await page.goto(lobbyUrl, { waitUntil: "load", timeout: 30000 });
       assert.equal(lobbyResponse?.status(), 200, target.name + " 角色管理頁必須載入成功");
