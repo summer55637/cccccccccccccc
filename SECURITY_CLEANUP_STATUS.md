@@ -24,7 +24,7 @@ The audit was performed against the four current branch heads without printing o
 - A targeted scan of the 22 current offline production source files (`.js`, `.html`, `.css`) found no matches for private-key blocks, common GitHub/AWS token formats, JWT-shaped values, or long literal values assigned to common credential fields. This is a narrow source scan, not a full secret audit: it does not scan Git history, original asset packs, all other repository files, or deployment artifacts.
 - The offline CI now includes this targeted credential scan in `offline/tests/offline-boundary.test.mjs`. A clean result only means the scanned offline source set passed these patterns; it does not clear the known historical or `server.js` findings.
 
-## Important: not yet resolved
+A maintainer-facing rotation procedure is recorded in [docs/SECURITY_ROTATION_CHECKLIST.md](docs/SECURITY_ROTATION_CHECKLIST.md). It is a runbook only; no external credentials have been changed by this commit.\n\n## Important: not yet resolved
 
 1. The earlier Git commit history still contains the removed account file. Removing a file from the latest tree does not erase it from Git history.
 2. The original backup branch intentionally preserves the original state. It still contains the file and must remain private and restricted.
