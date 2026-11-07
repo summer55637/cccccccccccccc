@@ -114,6 +114,8 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
 
       assert.equal(await page.locator("#positionText").textContent(), "9, 5");
       assert.equal(await page.locator("#movementControls button[data-move]").count(), 4);
+      const initialSave = await readSavedPosition(page, dbName, characterId);
+      const initialUpdatedAt = initialSave.updatedAt;
       const startTime = Date.now();
       let moves = 0;
 
@@ -130,7 +132,8 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
             await page.waitForFunction(expected => {
               const position = document.querySelector("#positionText")?.textContent;
               const status = document.querySelector("#gameStatus")?.textContent || "";
-              return position === expected && status.includes("位置已自動保存");
+              const message = document.querySelector("#adventureMessage")?.textContent || "";
+              return position === expected && status.includes("位置已自動保存") && message.includes(expected);
             }, step.position, { timeout: 5000 });
             const elapsed = Date.now() - moveStartedAt;
             if (elapsed > 2000) slowMoves.push({ move: moves + 1, elapsed });
@@ -154,15 +157,21 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
 
       // One more round trip after the final reload proves the controls remain responsive.
       await page.locator('#movementControls button[data-move="right"]').tap();
-      await page.waitForFunction(() => document.querySelector("#positionText")?.textContent === "10, 5",
-        null, { timeout: 5000 });
+      await page.waitForFunction(() => {
+        const message = document.querySelector("#adventureMessage")?.textContent || "";
+        return document.querySelector("#positionText")?.textContent === "10, 5" && message.includes("10, 5");
+      }, null, { timeout: 5000 });
       await page.locator('#movementControls button[data-move="left"]').tap();
-      await page.waitForFunction(() => document.querySelector("#positionText")?.textContent === "9, 5",
-        null, { timeout: 5000 });
+      await page.waitForFunction(() => {
+        const message = document.querySelector("#adventureMessage")?.textContent || "";
+        return document.querySelector("#positionText")?.textContent === "9, 5" && message.includes("9, 5");
+      }, null, { timeout: 5000 });
       moves += 2;
 
       const finalSave = await readSavedPosition(page, dbName, characterId);
       assert.deepEqual(finalSave.position, { x: 9, y: 5 });
+      assert.notEqual(finalSave.updatedAt, initialUpdatedAt,
+        profile.label + " 多次移動後必須真正更新 IndexedDB 存檔時間");
       assert.deepEqual(pageErrors, [],
         profile.label + " 長時操作有 JavaScript／Console 錯誤：" + pageErrors.join("; "));
       assert.deepEqual(externalRequests, [],
