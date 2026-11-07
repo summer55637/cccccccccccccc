@@ -224,7 +224,7 @@ function transactionComplete(tx) {
 }
 function dbError(error) {
   if (error?.name === "ConstraintError") return new Error("角色名稱已存在，請換一個名稱。");
-  if (error?.name === "QuotaExceededError") return new Error("瀏覽器儲存空間不足。");
+  if (error?.name === "QuotaExceededError") return new DOMException("瀏覽器儲存空間不足。", "QuotaExceededError");
   return error instanceof Error ? error : new Error("IndexedDB 操作失敗。");
 }
 
