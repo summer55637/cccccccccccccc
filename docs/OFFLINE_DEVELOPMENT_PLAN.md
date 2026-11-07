@@ -106,7 +106,7 @@
 - [x] 在大量 IndexedDB 寫入途中關閉測試分頁，再由另一分頁檢查最後成功存檔保留且沒有半套資料；GitHub Actions 已通過。
 - [x] Firefox、WebKit 冒煙測試：角色建立、遊戲載入、重新整理保存及返回角色管理，沒有外部網路請求。
 - [ ] 完成真實 iOS／Android 裝置及更長時間效能量測。
-- [ ] 真正耗盡作業系統／瀏覽器儲存配額；目前只完成 IndexedDB 寫入邊界的 QuotaExceededError 注入測試。
+- [x] 真實儲存空間耗盡測試：在 512 MiB 獨立 tmpfs 上執行持久化 Chromium，持續寫入 IndexedDB 直到瀏覽器實際回報 QuotaExceededError（本次成功寫入 321,912,832 bytes；瀏覽器 estimate 顯示的來源配額約 1.07 GB，並不等同 tmpfs 容量）。驗證遊戲角色、背包及裝備原子存檔整批回滾且顯示繁體中文提示；刪除填充資料釋放空間後可再次成功存檔。GitHub Actions 已通過。
 - [x] 在大量 IndexedDB 寫入中強制終止 Worker 執行環境，確認最後成功存檔保留且沒有半套資料；此測試不代表整個瀏覽器程序崩潰。
 - [x] Chromium 持久化資料目錄測試：在 IndexedDB 交易尚未完成時強制終止整個 Chromium 程序群組，再啟動同一資料目錄，確認最後成功存檔保留且未完成交易資料為 0 筆；GitHub Actions 已通過。
 - [ ] 更完整的跨瀏覽器存檔相容測試；目前 Firefox／WebKit 僅完成冒煙測試。
