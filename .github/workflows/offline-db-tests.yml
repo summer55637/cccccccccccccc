@@ -40,9 +40,12 @@ jobs:
         working-directory: offline
         run: npm install --no-save --no-package-lock playwright
 
-      - name: Install Chromium
+      - name: Install Chromium, Firefox and WebKit
         working-directory: offline
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Run real-browser IndexedDB tests
+      - name: Run real-browser IndexedDB and offline tests
         run: node offline/tests/run-browser-tests.mjs
+
+      - name: Run Firefox and WebKit compatibility smoke tests
+        run: node offline/tests/run-cross-browser-smoke.mjs
