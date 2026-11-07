@@ -5,6 +5,7 @@ import { chromium } from "playwright";
 import { runCharacterUITests } from "./character-ui.test.mjs";
 import { runBackupUITests } from "./backup-ui.test.mjs";
 import { runOfflineBoundaryTests } from "./offline-boundary.test.mjs";
+import { runServiceWorkerTests } from "./service-worker.test.mjs";
 
 const baseUrl = "http://127.0.0.1:8081";
 const testUrl = baseUrl + "/offline/tests/indexeddb-test.html";
@@ -218,6 +219,13 @@ try {
   });
   assert.equal(backupResult.failed, 0, "存檔備份 UI 測試不得失敗");
   process.stdout.write("PASS：" + backupResult.passed + " backup and restore UI checks\n");
+
+  const serviceWorkerResult = await runServiceWorkerTests({
+    browser,
+    baseUrl,
+    onLog: line => process.stdout.write(line + "\n"),
+  });
+  process.stdout.write("PASS：" + serviceWorkerResult.passed + " offline service worker checks\n");
   process.stdout.write("\nPASS：All offline character browser tests\n");
 } catch (error) {
   process.stderr.write("\nFAIL：" + (error?.stack || error) + "\n");
