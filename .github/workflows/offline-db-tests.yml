@@ -44,7 +44,15 @@ jobs:
         working-directory: offline
         run: npx playwright install --with-deps chromium firefox webkit
 
+      - name: Prepare bounded filesystem for real quota exhaustion
+        run: |
+          sudo mkdir -p /mnt/chrome-quota-test
+          sudo mount -t tmpfs -o size=256M,mode=1777 tmpfs /mnt/chrome-quota-test
+          df -h /mnt/chrome-quota-test
+
       - name: Run real-browser IndexedDB and offline tests
+        env:
+          CHROME_QUOTA_TEST_ROOT: /mnt/chrome-quota-test
         run: node offline/tests/run-browser-tests.mjs
 
       - name: Run Firefox and WebKit compatibility smoke tests
