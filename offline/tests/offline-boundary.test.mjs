@@ -49,6 +49,10 @@ export function runOfflineBoundaryTests(repositoryRoot = process.cwd()) {
     }
 
     if (file.endsWith(".html")) {
+      const policyTags = [...content.matchAll(/<meta\b[^>]*http-equiv=["']Content-Security-Policy["'][^>]*>/gi)];
+      if (!policyTags.some(match => /connect-src\s+'none'/i.test(match[0]))) {
+        violations.push(label + " 缺少 connect-src 'none' 的內容安全政策。");
+      }
       const attributes = content.matchAll(/\b(?:src|href|action|poster)\s*=\s*["']([^"']+)["']/gi);
       for (const match of attributes) {
         if (/^(?:https?:)?\/\//i.test(match[1].trim())) {
