@@ -195,6 +195,34 @@ export async function runIndexedDBTests({ onLog = () => {} } = {}) {
     assert(stressDuration < 10000, "40 位角色的批次存取不應超過 10 秒");
     pass("批次建立、重新開啟、讀取及刪除 40 位角色（" + stressDuration + " ms）");
 
+    const sessionCharacter = await db.createCharacter({ name: "長時存檔測試", classId: "knight" });
+    const sessionStartedAt = performance.now();
+    for (let step = 1; step <= 250; step += 1) {
+      await db.updateCharacterAndSaveData(sessionCharacter.characterId, {
+        experience: step * 5,
+        playTimeSeconds: step,
+        position: { x: step, y: step % 12 },
+      }, {
+        inventory: { capacity: 100, items: [{ itemId: "session-potion", count: step }] },
+        skills: { points: step % 10, learned: [], shortcuts: [], cooldowns: {} },
+      });
+    }
+    const beforeSessionRestart = await db.loadCharacterSave(sessionCharacter.characterId);
+    assert(beforeSessionRestart.character.playTimeSeconds === 250, "連續存檔後遊戲時間必須到達最後檢查點");
+    assert(beforeSessionRestart.character.position.x === 250, "連續存檔後角色位置必須是最後座標");
+    assert(beforeSessionRestart.inventory.items[0].count === 250, "連續存檔後背包必須是最後資料");
+    db.close();
+    db = new OfflineCharacterDB({ dbName });
+    const afterSessionRestart = await db.loadCharacterSave(sessionCharacter.characterId);
+    assert(afterSessionRestart.character.experience === 1250, "重開資料庫後必須保留最後經驗值");
+    assert(afterSessionRestart.character.position.x === 250, "重開資料庫後必須保留最後位置");
+    assert(afterSessionRestart.inventory.items[0].count === 250, "重開資料庫後必須保留最後背包");
+    assert(afterSessionRestart.skills.points === 0, "重開資料庫後必須保留最後技能點數");
+    assert(await db.deleteCharacter(sessionCharacter.characterId), "清理長時間存檔測試角色");
+    const sessionDuration = Math.round(performance.now() - sessionStartedAt);
+    assert(sessionDuration < 15000, "250 次連續原子存檔應在 15 秒內完成");
+    pass("連續 250 次原子交易存檔、重開後資料核對（" + sessionDuration + " ms）");
+
     onLog(`全部通過：${results.length} 項測試`);
     return { passed: results.length, failed: 0, results };
   } finally {
