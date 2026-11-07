@@ -68,7 +68,7 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
     const page = await context.newPage();
     const pageErrors = [];
     const externalRequests = [];
-    const slowMoves = [];
+    const moveDurations = [];
     page.on("pageerror", error => pageErrors.push(error.message));
     page.on("console", message => {
       if (message.type() === "error") pageErrors.push("console: " + message.text());
@@ -136,7 +136,7 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
               return position === expected && status.includes("位置已自動保存") && message.includes(expected);
             }, step.position, { timeout: 5000 });
             const elapsed = performance.now() - moveStartedAt;
-            if (elapsed > 2000) slowMoves.push({ move: moves + 1, elapsed });
+            moveDurations.push({ move: moves + 1, elapsed });
             moves += 1;
           }
         }
@@ -183,7 +183,7 @@ export async function runMobileSessionSoakTests({ browser, baseUrl, onLog = () =
       passed += 1;
       onLog("PASS：" + profile.label + " " + moves +
         " 次方向觸控、3 次重新載入；座標及 IndexedDB 一致" +
-        "；最慢操作 " + Math.max(0, ...slowMoves.map(item => item.elapsed)).toFixed(1) + " ms");
+        "；最慢操作 " + Math.max(0, ...moveDurations.map(item => item.elapsed)).toFixed(1) + " ms");
     } finally {
       await context.close();
       await deleteDatabase(browser, baseUrl, dbName);
