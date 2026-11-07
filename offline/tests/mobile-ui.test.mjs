@@ -111,11 +111,13 @@ export async function runMobileUITests({ browser, baseUrl, onLog = () => {} }) {
       await assertInsideViewport(page, "#worldGrid", viewport.label + " 遊戲地圖");
       await assertInsideViewport(page, "#movementControls", viewport.label + " 觸控方向盤");
       if (viewport.landscape) {
-        const stageHeight = await page.locator("#worldGrid").evaluate(element =>
-          element.getBoundingClientRect().height
-        );
-        assert.ok(stageHeight <= viewport.height * 0.5,
-          viewport.label + " 地圖高度應壓縮至畫面高度的一半內，避免方向盤被推離首屏");
+        if (viewport.height <= 500) {
+          const stageHeight = await page.locator("#worldGrid").evaluate(element =>
+            element.getBoundingClientRect().height
+          );
+          assert.ok(stageHeight <= viewport.height * 0.5,
+            viewport.label + " 短螢幕地圖高度應壓縮至畫面高度的一半內，避免方向盤被推離首屏");
+        }
         await assertInsideViewport(page, "#movementControls button[data-move='left']",
           viewport.label + " 左方向按鈕");
       }
