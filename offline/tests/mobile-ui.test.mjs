@@ -88,7 +88,17 @@ export async function runMobileUITests({ browser, baseUrl, onLog = () => {} }) {
       await page.waitForURL(url => url.pathname.endsWith("/offline/game/index.html"), {
         timeout: 20000,
       });
-      await page.locator('html[data-ready="true"]').waitFor({ timeout: 15000 });
+      await page.waitForFunction(() => {
+        const state = document.documentElement.dataset.ready;
+        return state === "true" || state === "error" || state === "empty";
+      }, { timeout: 15000 });
+      const readiness = await page.evaluate(() => ({
+        state: document.documentElement.dataset.ready || "missing",
+        status: document.querySelector("#gameStatus")?.textContent || "",
+        url: location.href,
+      }));
+      assert.equal(readiness.state, "true",
+        viewport.label + " 遊戲初始化失敗：" + readiness.state + "；" + readiness.status + "；" + readiness.url);
       assert.equal(await page.locator("#characterName").textContent(), "行動裝置測試角色");
       await assertNoHorizontalOverflow(page, viewport.label + " 遊戲主畫面");
       await assertInsideViewport(page, "#worldGrid", viewport.label + " 遊戲地圖");
