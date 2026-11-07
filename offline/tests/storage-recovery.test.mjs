@@ -622,7 +622,7 @@ export async function runStorageRecoveryTests({ browser, browserType, baseUrl, o
       onLog("PASS：持久化 Chromium 實際寫入資料直到 IndexedDB 回報 QuotaExceededError");
 
       const appWrite = await quotaPage.evaluate(async characterId => {
-        const items = Array.from({ length: 5000 }, () => ({
+        const items = Array.from({ length: 2000 }, () => ({
           itemId: "x".repeat(128),
           count: 1,
           extra: "y".repeat(37),
