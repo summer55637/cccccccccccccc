@@ -403,4 +403,14 @@ async function initialize() {
   }
 }
 
+function registerOfflineShell() {
+  if (!("serviceWorker" in navigator)) return;
+  const scriptUrl = new URL("../../service-worker.js", location.href);
+  const scopeUrl = new URL("../../", location.href);
+  navigator.serviceWorker.register(scriptUrl, { scope: scopeUrl.pathname }).catch(error => {
+    console.warn("本機離線快取無法啟用。", error);
+  });
+}
+
+registerOfflineShell();
 initialize();
