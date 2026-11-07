@@ -1,4 +1,8 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 function deleteDatabase(page, name) {
   return page.evaluate(dbName => new Promise((resolve, reject) => {
@@ -9,7 +13,7 @@ function deleteDatabase(page, name) {
   }), name);
 }
 
-export async function runStorageRecoveryTests({ browser, baseUrl, onLog = () => {} }) {
+export async function runStorageRecoveryTests({ browser, browserType, baseUrl, onLog = () => {} }) {
   let passed = 0;
   const context = await browser.newContext({ serviceWorkers: "block" });
   const page = await context.newPage();
@@ -274,6 +278,182 @@ export async function runStorageRecoveryTests({ browser, baseUrl, onLog = () => 
     await workerPage.close().catch(() => {});
     await workerVerifier.close().catch(() => {});
     await workerContext.close();
+  }
+
+
+  if (process.platform === "win32") {
+    onLog("SKIP：整個瀏覽器程序強制終止測試需在 POSIX CI 執行，避免只終止 Chrome 主程序而留下子程序");
+  } else {
+    const profileDir = await mkdtemp(join(tmpdir(), "offline-browser-crash-"));
+    const databaseName = "offline-browser-process-crash-" + Date.now();
+    const executablePath = browserType.executablePath();
+    let chromeProcess;
+    let connectedBrowser;
+    let restartProcess;
+    let restartedBrowser;
+
+    function startChrome() {
+      return spawn(executablePath, [
+        "--headless=new",
+        "--no-sandbox",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--remote-debugging-address=127.0.0.1",
+        "--remote-debugging-port=0",
+        "--user-data-dir=" + profileDir,
+        "about:blank",
+      ], {
+        detached: true,
+        stdio: "ignore",
+      });
+    }
+
+    async function waitForDevTools(child) {
+      const deadline = Date.now() + 20000;
+      while (Date.now() < deadline) {
+        if (child.exitCode !== null) {
+          throw new Error("Chromium 在啟動遠端除錯介面前就已結束。");
+        }
+        try {
+          const activePort = await readFile(join(profileDir, "DevToolsActivePort"), "utf8");
+          const port = Number(activePort.split(/\r?\n/)[0]);
+          if (Number.isInteger(port) && port > 0) return port;
+        } catch {
+          // Chromium has not written DevToolsActivePort yet.
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      throw new Error("等待 Chromium 遠端除錯連線逾時。");
+    }
+
+    async function connectChrome(child) {
+      const port = await waitForDevTools(child);
+      return browserType.connectOverCDP("http://127.0.0.1:" + port);
+    }
+
+    async function killChromeProcessGroup(child) {
+      if (!child?.pid || child.exitCode !== null) return;
+      try {
+        process.kill(-child.pid, "SIGKILL");
+      } catch (error) {
+        if (error?.code !== "ESRCH") throw error;
+      }
+      await Promise.race([
+        new Promise(resolve => child.once("exit", resolve)),
+        new Promise((_, reject) => setTimeout(
+          () => reject(new Error("Chromium 程序群組未在期限內結束。")),
+          10000,
+        )),
+      ]);
+    }
+
+    try {
+      chromeProcess = startChrome();
+      connectedBrowser = await connectChrome(chromeProcess);
+      const persistentContext = connectedBrowser.contexts()[0];
+      assert.ok(persistentContext, "必須取得 Chromium 的持久化預設 Context");
+      const crashPage = await persistentContext.newPage();
+      const response = await crashPage.goto(baseUrl + "/offline/tests/indexeddb-test.html", {
+        waitUntil: "load",
+        timeout: 30000,
+      });
+      assert.equal(response?.status(), 200, "程序中斷測試頁必須載入成功");
+
+      let signalReady;
+      const ready = new Promise(resolve => { signalReady = resolve; });
+      await crashPage.exposeBinding("__notifyProcessCrashReady", (_source, data) => {
+        signalReady(data);
+      });
+
+      await crashPage.evaluate(dbName => {
+        const source = "\nself.onmessage = event => {\n  const request = indexedDB.open(event.data, 1);\n  request.onupgradeneeded = () => {\n    request.result.createObjectStore(\"checkpoint\", { keyPath: \"key\" });\n    request.result.createObjectStore(\"pendingWrites\", { keyPath: \"id\" });\n  };\n  request.onerror = () => self.postMessage({ type: \"error\" });\n  request.onsuccess = () => {\n    const database = request.result;\n    const baseline = database.transaction(\"checkpoint\", \"readwrite\");\n    baseline.objectStore(\"checkpoint\").put({\n      key: \"current\",\n      value: \"last-good-save\",\n    });\n    baseline.oncomplete = () => {\n      const transaction = database.transaction(\n        [\"checkpoint\", \"pendingWrites\"],\n        \"readwrite\",\n      );\n      transaction.objectStore(\"checkpoint\").put({\n        key: \"current\",\n        value: \"must-not-commit\",\n      });\n      const store = transaction.objectStore(\"pendingWrites\");\n      const payload = \"x\".repeat(4096);\n      for (let id = 0; id < 3000; id += 1) {\n        store.put({ id, payload });\n      }\n      self.postMessage({ type: \"queued\", count: 3000 });\n\n      // Keep this event handler active. IndexedDB request completion\n      // events cannot run until this worker event handler returns.\n      const deadline = Date.now() + 30000;\n      while (Date.now() < deadline) { /* intentional crash window */ }\n    };\n  };\n};\n";
+        const workerUrl = URL.createObjectURL(new Blob([source], {
+          type: "text/javascript",
+        }));
+        const worker = new Worker(workerUrl);
+        worker.onmessage = event => {
+          void window.__notifyProcessCrashReady(event.data);
+        };
+        worker.onerror = () => {
+          void window.__notifyProcessCrashReady({ type: "error" });
+        };
+        worker.postMessage(dbName);
+      }, databaseName);
+
+      const queued = await Promise.race([
+        ready,
+        new Promise((_, reject) => setTimeout(
+          () => reject(new Error("等待程序中斷測試 Worker 排入寫入逾時。")),
+          20000,
+        )),
+      ]);
+      assert.equal(queued?.type, "queued", "Worker 必須先排入未完成 IndexedDB 交易");
+      assert.equal(queued.count, 3000, "Worker 必須排入 3,000 筆未完成寫入");
+      onLog("INFO：已排入未完成 IndexedDB 交易，現在強制終止整個 Chromium 程序群組");
+
+      await killChromeProcessGroup(chromeProcess);
+      await connectedBrowser.close().catch(() => {});
+      connectedBrowser = undefined;
+      chromeProcess = undefined;
+
+      // The browser process and all renderer/worker children are gone.
+      for (const marker of ["SingletonLock", "SingletonCookie", "SingletonSocket", "DevToolsActivePort"]) {
+        await rm(join(profileDir, marker), { force: true }).catch(() => {});
+      }
+
+      restartProcess = startChrome();
+      restartedBrowser = await connectChrome(restartProcess);
+      const restoredContext = restartedBrowser.contexts()[0];
+      assert.ok(restoredContext, "重新啟動後必須取得持久化 Chromium Context");
+      const verifier = await restoredContext.newPage();
+      const verifyResponse = await verifier.goto(baseUrl + "/offline/tests/indexeddb-test.html", {
+        waitUntil: "load",
+        timeout: 30000,
+      });
+      assert.equal(verifyResponse?.status(), 200, "重新啟動後復原頁面必須載入成功");
+
+      const restored = await verifier.evaluate(async dbName => {
+        const database = await new Promise((resolve, reject) => {
+          const request = indexedDB.open(dbName, 1);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error || new Error("無法重新開啟瀏覽器中斷測試資料庫。"));
+        });
+        const transaction = database.transaction(
+          ["checkpoint", "pendingWrites"],
+          "readonly",
+        );
+        const checkpointRequest = transaction.objectStore("checkpoint").get("current");
+        const pendingRequest = transaction.objectStore("pendingWrites").count();
+        const result = await new Promise((resolve, reject) => {
+          transaction.oncomplete = () => resolve({
+            checkpoint: checkpointRequest.result?.value,
+            pendingCount: pendingRequest.result,
+          });
+          transaction.onabort = () => reject(transaction.error || new Error("程序重啟後復原讀取交易中止。"));
+          transaction.onerror = () => {};
+        });
+        database.close();
+        return result;
+      }, databaseName);
+
+      assert.equal(restored.checkpoint, "last-good-save",
+        "整個 Chromium 程序強制終止後必須保留最後成功存檔");
+      assert.equal(restored.pendingCount, 0,
+        "整個 Chromium 程序強制終止後不可留下未完成交易的部分資料");
+      passed += 1;
+      onLog("PASS：強制終止整個 Chromium 程序群組並重啟，最後成功存檔保留且沒有半套資料");
+
+      await deleteDatabase(verifier, databaseName);
+      await verifier.close();
+    } finally {
+      await killChromeProcessGroup(chromeProcess).catch(() => {});
+      await connectedBrowser?.close().catch(() => {});
+      await killChromeProcessGroup(restartProcess).catch(() => {});
+      await restartedBrowser?.close().catch(() => {});
+      await rm(profileDir, { recursive: true, force: true });
+    }
   }
 
   return { passed, failed: 0 };
