@@ -49,13 +49,17 @@ export async function runServiceWorkerTests({ browser, baseUrl, onLog = () => {}
         throw new Error("角色管理頁缺少 PWA／iOS 主畫面安裝設定。");
       }
       const manifestUrl = new URL(manifestLink.href);
-      const response = await fetch(manifestUrl);
-      if (!response.ok) throw new Error("PWA manifest 無法讀取：" + response.status);
-      const manifest = await response.json();
+      const cacheNames = await caches.keys();
+      const shellCacheName = cacheNames.find(name => name === "offline-adventure-shell-v2");
+      if (!shellCacheName) throw new Error("找不到 PWA 離線快取。");
+      const shellCache = await caches.open(shellCacheName);
+      const manifestResponse = await shellCache.match(manifestUrl.href);
+      if (!manifestResponse) throw new Error("PWA manifest 未加入離線快取。");
+      const manifest = await manifestResponse.json();
       const icons = await Promise.all(manifest.icons.map(async icon => {
         const iconUrl = new URL(icon.src, manifestUrl);
-        const iconResponse = await fetch(iconUrl);
-        if (!iconResponse.ok) throw new Error("PWA 圖示無法讀取：" + icon.src);
+        const iconResponse = await shellCache.match(iconUrl.href);
+        if (!iconResponse) throw new Error("PWA 圖示未加入離線快取：" + icon.src);
         const bitmap = await createImageBitmap(await iconResponse.blob());
         return {src: icon.src, width: bitmap.width, height: bitmap.height};
       }));
