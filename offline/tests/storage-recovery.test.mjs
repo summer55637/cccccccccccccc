@@ -184,5 +184,135 @@ export async function runStorageRecoveryTests({ browser, baseUrl, onLog = () => 
     await crashContext.close();
   }
 
+
+  const workerContext = await browser.newContext({ serviceWorkers: "block" });
+  const workerPage = await workerContext.newPage();
+  const workerVerifier = await workerContext.newPage();
+  const workerDbName = "offline-worker-termination-" + Date.now();
+
+  try {
+    await Promise.all([
+      workerPage.goto(baseUrl + "/offline/tests/indexeddb-test.html", { waitUntil: "load" }),
+      workerVerifier.goto(baseUrl + "/offline/tests/indexeddb-test.html", { waitUntil: "load" }),
+    ]);
+
+    const termination = await workerPage.evaluate(async dbName => {
+      const workerSource = \`
+        self.onmessage = event => {
+          const request = indexedDB.open(event.data, 1);
+          request.onupgradeneeded = () => {
+            request.result.createObjectStore("checkpoint", { keyPath: "key" });
+            request.result.createObjectStore("pendingWrites", { keyPath: "id" });
+          };
+          request.onerror = () => self.postMessage({ type: "error", stage: "open" });
+          request.onsuccess = () => {
+            const database = request.result;
+            const baseline = database.transaction("checkpoint", "readwrite");
+            baseline.objectStore("checkpoint").put({
+              key: "current",
+              value: "last-good-save",
+            });
+            baseline.oncomplete = () => {
+              const transaction = database.transaction(
+                ["checkpoint", "pendingWrites"],
+                "readwrite",
+              );
+              transaction.objectStore("checkpoint").put({
+                key: "current",
+                value: "must-not-commit",
+              });
+              const store = transaction.objectStore("pendingWrites");
+              const payload = "x".repeat(4096);
+              for (let id = 0; id < 3000; id += 1) {
+                store.put({ id, payload });
+              }
+              self.postMessage({ type: "queued", count: 3000 });
+
+              // Keep this worker task alive so the parent can terminate its context
+              // before IndexedDB finishes dispatching the queued request events.
+              const deadline = Date.now() + 30000;
+              while (Date.now() < deadline) { /* intentional termination window */ }
+            };
+          };
+        };
+      \`;
+      const workerUrl = URL.createObjectURL(new Blob([workerSource], {
+        type: "text/javascript",
+      }));
+      const worker = new Worker(workerUrl);
+
+      try {
+        return await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            worker.terminate();
+            reject(new Error("等待 Worker 排入 IndexedDB 寫入逾時。"));
+          }, 15000);
+          worker.onerror = () => {
+            clearTimeout(timeout);
+            worker.terminate();
+            reject(new Error("IndexedDB Worker 測試發生錯誤。"));
+          };
+          worker.onmessage = event => {
+            if (event.data?.type === "error") {
+              clearTimeout(timeout);
+              worker.terminate();
+              reject(new Error("Worker 無法建立測試資料庫。"));
+              return;
+            }
+            if (event.data?.type === "queued") {
+              clearTimeout(timeout);
+              worker.terminate();
+              resolve({ queued: event.data.count, terminated: true });
+            }
+          };
+          worker.postMessage(dbName);
+        });
+      } finally {
+        worker.terminate();
+        URL.revokeObjectURL(workerUrl);
+      }
+    }, workerDbName);
+
+    assert.equal(termination.queued, 3000, "Worker 必須先排入 3,000 筆未完成寫入");
+    assert.equal(termination.terminated, true, "必須強制終止寫入 Worker");
+
+    const afterTermination = await workerVerifier.evaluate(async dbName => {
+      const database = await new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, 1);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("無法重新開啟 Worker 測試資料庫。"));
+      });
+      const transaction = database.transaction(
+        ["checkpoint", "pendingWrites"],
+        "readonly",
+      );
+      const checkpointRequest = transaction.objectStore("checkpoint").get("current");
+      const pendingRequest = transaction.objectStore("pendingWrites").count();
+      const result = await new Promise((resolve, reject) => {
+        transaction.oncomplete = () => resolve({
+          checkpoint: checkpointRequest.result?.value,
+          pendingCount: pendingRequest.result,
+        });
+        transaction.onabort = () => reject(transaction.error || new Error("Worker 復原讀取交易中止。"));
+        transaction.onerror = () => {};
+      });
+      database.close();
+      return result;
+    }, workerDbName);
+
+    assert.equal(afterTermination.checkpoint, "last-good-save",
+      "Worker 強制終止時，不可覆蓋最後成功存檔");
+    assert.equal(afterTermination.pendingCount, 0,
+      "Worker 強制終止時，不可留下部分寫入");
+    passed += 1;
+    onLog("PASS：強制終止正在大量寫入的 Worker，重開後保留最後成功存檔且沒有半套資料");
+
+    await deleteDatabase(workerVerifier, workerDbName);
+  } finally {
+    await workerPage.close().catch(() => {});
+    await workerVerifier.close().catch(() => {});
+    await workerContext.close();
+  }
+
   return { passed, failed: 0 };
 }
