@@ -84,6 +84,64 @@ export async function runIndexedDBTests({ onLog = () => {} } = {}) {
     assert(await db.deleteCharacter(created.characterId) === false, "重複刪除應回傳 false");
     pass("刪除角色及其附屬資料");
 
+    const quotaDatabase = new OfflineCharacterDB({
+      dbName: temporaryName(),
+      indexedDB: {
+        open() {
+          const request = { error: new DOMException("Quota exceeded", "QuotaExceededError") };
+          queueMicrotask(() => request.onerror?.());
+          return request;
+        },
+      },
+    });
+    let quotaMessage = "";
+    try {
+      await quotaDatabase.open();
+    } catch (error) {
+      quotaMessage = error.message;
+    } finally {
+      quotaDatabase.close();
+    }
+    assert(quotaMessage === "瀏覽器儲存空間不足。", "儲存配額錯誤應轉成清楚提示");
+    pass("瀏覽器儲存配額錯誤會顯示可理解的提示");
+
+    await db.saveCharacterData(created.characterId, {
+      inventory: { capacity: 80, items: [{ itemId: "test-potion", count: 5 }] },
+    });
+    let oversizedRejected = false;
+    try {
+      await db.saveCharacterData(created.characterId, {
+        inventory: { capacity: 80, items: [], note: "x".repeat(1_000_010) },
+      });
+    } catch (error) {
+      oversizedRejected = /太大/.test(error.message);
+    }
+    const preservedSave = await db.loadCharacterSave(created.characterId);
+    assert(oversizedRejected, "超過資料大小限制的存檔必須拒絕");
+    assert(preservedSave.inventory.items[0].count === 5, "拒絕大資料時不可破壞原有背包");
+    pass("拒絕超過 1 MB 的存檔資料並保留原有資料");
+
+    const stressStartedAt = performance.now();
+    const batch = await Promise.all(Array.from({ length: 40 }, (_, index) =>
+      db.createCharacter({
+        name: "批次角色" + String(index + 1).padStart(2, "0"),
+        classId: index % 2 === 0 ? "knight" : "elf",
+      })
+    ));
+    assert(batch.length === 40, "應能批次建立 40 位角色");
+    assert((await db.listCharacters()).length === 40, "批次建立後清單應包含 40 位角色");
+    db.close();
+    db = new OfflineCharacterDB({ dbName });
+    const stressList = await db.listCharacters();
+    assert(stressList.length === 40, "重新開啟後應保留全部 40 位角色");
+    const sampleSave = await db.loadCharacterSave(batch[19].characterId);
+    assert(sampleSave?.character?.name === batch[19].name, "批次角色附屬存檔應可讀取");
+    await Promise.all(batch.map(item => db.deleteCharacter(item.characterId)));
+    assert((await db.listCharacters()).length === 0, "批次刪除後角色清單應為空");
+    const stressDuration = Math.round(performance.now() - stressStartedAt);
+    assert(stressDuration < 10000, "40 位角色的批次存取不應超過 10 秒");
+    pass("批次建立、重新開啟、讀取及刪除 40 位角色（" + stressDuration + " ms）");
+
     onLog(`全部通過：${results.length} 項測試`);
     return { passed: results.length, failed: 0, results };
   } finally {
