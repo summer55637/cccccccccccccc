@@ -726,9 +726,9 @@ document.querySelectorAll("button[data-feature]").forEach(button => {
 
 window.addEventListener("pagehide", () => database.close());
 
-async function initialize() {
+async function initialize(offlineShellPromise) {
   try {
-    await database.open();
+    const [, offlineReady] = await Promise.all([database.open(), offlineShellPromise]);
     const selectedId = await database.getSetting("selectedCharacterId", null);
     const save = selectedId ? await database.loadCharacterSave(selectedId) : null;
     if (!save?.character) {
@@ -744,7 +744,11 @@ async function initialize() {
     renderInventory(await getInventorySave(database, character.characterId));
     await refreshSkillDisplay();
     elements.layout.hidden = false;
-    setStatus("已載入「" + character.name + "」的本機角色存檔。可以探索並攻擊怪物。", "success");
+    const readyMessage = "已載入「" + character.name + "」的本機角色存檔。可以探索並攻擊怪物。";
+    setStatus(
+      offlineReady ? readyMessage + " 離線快取已完成。" : readyMessage + " 離線快取尚未完成，請保持連線再試。",
+      offlineReady ? "success" : "info",
+    );
     document.documentElement.dataset.ready = "true";
   } catch (error) {
     setStatus(error?.message || "無法讀取本機角色資料。請使用 localhost 或 HTTPS。", "error");
@@ -752,14 +756,25 @@ async function initialize() {
   }
 }
 
-function registerOfflineShell() {
-  if (!("serviceWorker" in navigator)) return;
+async function registerOfflineShell() {
+  if (!("serviceWorker" in navigator)) return false;
   const scriptUrl = new URL("../service-worker.js", location.href);
   const scopeUrl = new URL("../", location.href);
-  navigator.serviceWorker.register(scriptUrl, { scope: scopeUrl.pathname }).catch(error => {
+  try {
+    const registration = await navigator.serviceWorker.register(scriptUrl, { scope: scopeUrl.pathname });
+    let timeoutId;
+    const readyRegistration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise(resolve => {
+        timeoutId = window.setTimeout(() => resolve(null), 15000);
+      }),
+    ]);
+    if (timeoutId) window.clearTimeout(timeoutId);
+    return Boolean(readyRegistration?.active || registration.active || navigator.serviceWorker.controller);
+  } catch (error) {
     console.warn("本機離線快取無法啟用。", error);
-  });
+    return Boolean(navigator.serviceWorker.controller);
+  }
 }
 
-registerOfflineShell();
-initialize();
+initialize(registerOfflineShell());
