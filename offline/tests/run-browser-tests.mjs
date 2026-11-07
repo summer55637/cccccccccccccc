@@ -6,6 +6,7 @@ import { runCharacterUITests } from "./character-ui.test.mjs";
 import { runBackupUITests } from "./backup-ui.test.mjs";
 import { runOfflineBoundaryTests } from "./offline-boundary.test.mjs";
 import { runServiceWorkerTests } from "./service-worker.test.mjs";
+import { runStorageRecoveryTests } from "./storage-recovery.test.mjs";
 
 const baseUrl = "http://127.0.0.1:8081";
 const testUrl = baseUrl + "/offline/tests/indexeddb-test.html";
@@ -226,6 +227,12 @@ try {
     onLog: line => process.stdout.write(line + "\n"),
   });
   process.stdout.write("PASS：" + serviceWorkerResult.passed + " offline service worker checks\n");
+  const storageRecoveryResult = await runStorageRecoveryTests({
+    browser,
+    baseUrl,
+    onLog: line => process.stdout.write(line + "\n"),
+  });
+  process.stdout.write("PASS：" + storageRecoveryResult.passed + " storage quota and abrupt-close recovery checks\n");
   process.stdout.write("\nPASS：All offline character browser tests\n");
 } catch (error) {
   process.stderr.write("\nFAIL：" + (error?.stack || error) + "\n");
