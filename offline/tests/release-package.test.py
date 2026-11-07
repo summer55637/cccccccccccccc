@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import struct
 import tempfile
 import unittest
@@ -68,7 +69,7 @@ class OfflineReleasePackageTests(unittest.TestCase):
                 self.assertEqual(manifest["schemaVersion"],1)
                 self.assertEqual(len(manifest["files"]),result["files"])
                 self.assertTrue(all(len(item["sha256"])==64 for item in manifest["files"]))
-                self.assertIsNone(manifest["commit"])
+                self.assertEqual(manifest["commit"], os.environ.get("GITHUB_SHA") or None)
 
     def test_refuses_external_urls_and_hardcoded_secrets(self):
         with tempfile.TemporaryDirectory() as temp:
