@@ -4,6 +4,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright";
 import { runCharacterUITests } from "./character-ui.test.mjs";
 import { runMobileUITests } from "./mobile-ui.test.mjs";
+import { runMobileSessionSoakTests } from "./mobile-session-soak.test.mjs";
 import { runBackupUITests } from "./backup-ui.test.mjs";
 import { runOfflineBoundaryTests } from "./offline-boundary.test.mjs";
 import { runServiceWorkerTests } from "./service-worker.test.mjs";
@@ -76,6 +77,15 @@ try {
   });
   assert.equal(mobileResult.failed, 0, "行動版 UI 測試不得失敗");
   process.stdout.write("PASS：" + mobileResult.passed + " mobile and tablet UI checks\n");
+
+  const mobileSoakResult = await runMobileSessionSoakTests({
+    browser,
+    baseUrl,
+    onLog: line => process.stdout.write(line + "\n"),
+  });
+  assert.equal(mobileSoakResult.failed, 0, "手機長時操作測試不得失敗");
+  process.stdout.write("PASS：" + mobileSoakResult.totalMoves + " mobile touch session moves and " +
+    mobileSoakResult.totalReloads + " reload checks\n");
 
   const worldPage = await browser.newPage();
   const worldErrors = [];
