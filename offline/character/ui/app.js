@@ -388,29 +388,45 @@ elements.importFile.addEventListener("change", async event => {
 
 window.addEventListener("pagehide", () => db.close());
 
-async function initialize() {
+async function initialize(offlineShellPromise) {
   try {
-    await db.open();
+    const [, offlineReady] = await Promise.all([db.open(), offlineShellPromise]);
     await refreshCharacters();
     document.documentElement.dataset.ready = "true";
     elements.createButton.disabled = false;
     elements.exportBackup.disabled = false;
     elements.importBackup.disabled = false;
-    setStatus("本機角色資料庫已就緒。此頁不會連接原遊戲伺服器。", "success");
+    setStatus(
+      offlineReady
+        ? "本機角色資料庫已就緒，離線快取已完成。此頁不會連接原遊戲伺服器。"
+        : "本機角色資料庫已就緒，但離線快取尚未完成；請保持連線並重新整理。",
+      offlineReady ? "success" : "info",
+    );
   } catch (error) {
     setStatus(error?.message || "無法開啟本機資料庫。請使用 localhost 或 HTTPS。", "error");
     document.documentElement.dataset.ready = "error";
   }
 }
 
-function registerOfflineShell() {
-  if (!("serviceWorker" in navigator)) return;
+async function registerOfflineShell() {
+  if (!("serviceWorker" in navigator)) return false;
   const scriptUrl = new URL("../../service-worker.js", location.href);
   const scopeUrl = new URL("../../", location.href);
-  navigator.serviceWorker.register(scriptUrl, { scope: scopeUrl.pathname }).catch(error => {
+  try {
+    const registration = await navigator.serviceWorker.register(scriptUrl, { scope: scopeUrl.pathname });
+    let timeoutId;
+    const readyRegistration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise(resolve => {
+        timeoutId = window.setTimeout(() => resolve(null), 15000);
+      }),
+    ]);
+    if (timeoutId) window.clearTimeout(timeoutId);
+    return Boolean(readyRegistration?.active || registration.active || navigator.serviceWorker.controller);
+  } catch (error) {
     console.warn("本機離線快取無法啟用。", error);
-  });
+    return Boolean(navigator.serviceWorker.controller);
+  }
 }
 
-registerOfflineShell();
-initialize();
+initialize(registerOfflineShell());
