@@ -132,6 +132,7 @@ input::placeholder { color: #758292; }
   main { padding-top: 32px; }
   .lobby-grid { grid-template-columns: 1fr; }
   .page-footer { flex-direction: column; }
+  .small-button, .quiet-button { min-height: 44px; }
 }
 @media (max-width: 480px) {
   .panel { padding: 17px; }
