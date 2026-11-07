@@ -1,14 +1,5 @@
 import assert from "node:assert/strict";
 
-function deleteDatabase(indexedDB, name) {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(name);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error || new Error("無法清除存檔復原測試資料庫。"));
-    request.onblocked = () => reject(new Error("清除存檔復原測試資料庫遭其他連線阻擋。"));
-  });
-}
-
 export async function runStorageRecoveryTests({ browser, baseUrl, onLog = () => {} }) {
   let passed = 0;
   const context = await browser.newContext({ serviceWorkers: "block" });
@@ -88,13 +79,22 @@ export async function runStorageRecoveryTests({ browser, baseUrl, onLog = () => 
     onLog("PASS：解除配額限制後可再次正常存檔");
 
     await page.evaluate(async () => window.__quotaTestDatabase.close());
-    await deleteDatabase(page.evaluate(() => indexedDB), quotaDbName).catch(() => {});
+    await page.evaluate(dbName => new Promise((resolve, reject) => {
+      const request = indexedDB.deleteDatabase(dbName);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => reject(new Error("測試資料庫清除被阻擋。"));
+    }), quotaDbName);
   } finally {
     try { await cdp.send("Storage.overrideQuotaForOrigin", { origin }); } catch { /* Reset quota if the session is still alive. */ }
     try {
       await page.evaluate(async () => {
         window.__quotaTestDatabase?.close();
       });
+      await page.evaluate(dbName => new Promise(resolve => {
+        const request = indexedDB.deleteDatabase(dbName);
+        request.onsuccess = request.onerror = request.onblocked = () => resolve();
+      }), quotaDbName);
     } catch { /* The page may already be closed. */ }
     await cdp.detach().catch(() => {});
     await context.close();
@@ -178,7 +178,12 @@ export async function runStorageRecoveryTests({ browser, baseUrl, onLog = () => 
     passed += 1;
     onLog("PASS：交易寫入途中直接關閉分頁，重新開啟後保留最後成功存檔且沒有半套資料");
 
-    await deleteDatabase(verifier.evaluate(() => indexedDB), crashDbName).catch(() => {});
+    await verifier.evaluate(dbName => new Promise((resolve, reject) => {
+      const request = indexedDB.deleteDatabase(dbName);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => reject(new Error("中斷交易測試資料庫清除被阻擋。"));
+    }), crashDbName);
   } finally {
     await crashContext.close();
   }
