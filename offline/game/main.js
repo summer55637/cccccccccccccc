@@ -525,6 +525,7 @@ async function requestInventoryAction(action, value) {
       throw new Error("不支援的背包操作。");
     }
     await refreshInventoryDisplay();
+    await refreshCombatDisplay();
     await refreshSkillDisplay();
     document.querySelector("#adventureMessage").textContent = message;
     setStatus(message, "success");
