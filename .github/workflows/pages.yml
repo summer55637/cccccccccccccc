@@ -6,6 +6,7 @@ on:
       - offline/local-character-system
     paths:
       - ".github/workflows/pages.yml"
+      - ".github/scripts/**
       - "client/**"
   workflow_dispatch:
 
@@ -183,6 +184,7 @@ jobs:
         env:
           SITE_DIR: ${{ runner.temp }}/pages-site
           SCREENSHOT_PATH: ${{ runner.temp }}/original-client-smoke.png
+          SCREENSHOT_AFTER_ENTER_PATH: ${{ runner.temp }}/original-client-after-enter.png
         run: node .github/scripts/smoke-original-client.mjs
 
       - name: Upload original client smoke-test screenshot
@@ -190,7 +192,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: original-cocos-smoke-test
-          path: ${{ runner.temp }}/original-client-smoke.png
+          path: |
+            ${{ runner.temp }}/original-client-smoke.png
+            ${{ runner.temp }}/original-client-after-enter.png
           if-no-files-found: ignore
           retention-days: 7
 
