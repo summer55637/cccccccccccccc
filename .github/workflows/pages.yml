@@ -63,8 +63,6 @@ jobs:
                       "manifest_mapping.json",
                       "texture_packer_atlas.json",
                   })
-              if here == (client / "src").resolve():
-                  ignored.add("assets")  # analysis-only duplicate; runtime plugin is in client/assets
               if here == (client / "assets" / "main").resolve():
                   ignored.add("index.deobf.js")
               return ignored
