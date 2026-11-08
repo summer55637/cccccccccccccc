@@ -1,0 +1,88 @@
+name: Publish offline adventure to GitHub Pages
+
+on:
+  push:
+    branches:
+      - offline/local-character-system
+    paths:
+      - "offline/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout clean offline branch
+        uses: actions/checkout@v4
+        with:
+          ref: offline/local-character-system
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Build allowlisted offline release
+        run: python offline/tools/build-release.py --output "$RUNNER_TEMP/offline-adventure-release.zip"
+
+      - name: Prepare GitHub Pages site from verified release only
+        env:
+          RELEASE_ZIP: ${{ runner.temp }}/offline-adventure-release.zip
+          SITE_DIR: ${{ runner.temp }}/pages-site
+        run: |
+          python - <<'PY'
+          import os
+          import zipfile
+          from pathlib import Path
+
+          archive = Path(os.environ["RELEASE_ZIP"])
+          site = Path(os.environ["SITE_DIR"])
+          site.mkdir(parents=True, exist_ok=True)
+          with zipfile.ZipFile(archive) as bundle:
+              for entry in bundle.infolist():
+                  if entry.is_dir():
+                      continue
+                  name = entry.filename
+                  if not name.startswith("offline/"):
+                      raise SystemExit(f"Unexpected release path: {name}")
+                  relative = name[len("offline/"):]
+                  target = (site / relative).resolve()
+                  target.relative_to(site.resolve())
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(bundle.read(entry))
+          (site / ".nojekyll").write_text("", encoding="utf-8")
+          (site / "index.html").write_text(
+              '<!doctype html><html lang="zh-Hant"><meta charset="utf-8">'
+              '<meta name="viewport" content="width=device-width,initial-scale=1">'
+              '<meta http-equiv="refresh" content="0; url=./character/ui/index.html">'
+              '<title>單機冒險世界</title><p><a href="./character/ui/index.html">進入單機冒險世界</a></p></html>',
+              encoding="utf-8",
+          )
+          print(f"Prepared {sum(1 for p in site.rglob('*') if p.is_file())} release files")
+          PY
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ runner.temp }}/pages-site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
