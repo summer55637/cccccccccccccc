@@ -1,6 +1,5 @@
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
-import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
 
 const siteDir = process.env.SITE_DIR;
@@ -60,12 +59,23 @@ try {
 
   // Give Cocos time to import its engine, initialize bundles and render its launch scene.
   await delay(20000);
-  await mkdir(new URL(".", `file://${process.cwd()}/${screenshotPath}`).pathname, { recursive: true }).catch(() => {});
   await page.screenshot({ path: screenshotPath, fullPage: true });
 
-  const state = await page.evaluate(() => {
+  const state = await page.evaluate(async () => {
     const canvas = document.querySelector("#GameCanvas");
     const rect = canvas?.getBoundingClientRect();
+    let cocos = { imported: false, sceneName: null, version: null, error: null };
+    try {
+      const engine = await window.System.import("cc");
+      cocos = {
+        imported: true,
+        sceneName: engine.director?.getScene?.()?.name || null,
+        version: engine.ENGINE_VERSION || engine.VERSION || null,
+        error: null,
+      };
+    } catch (error) {
+      cocos.error = String(error).slice(0, 500);
+    }
     return {
       title: document.title,
       systemJsLoaded: typeof window.System !== "undefined",
@@ -74,6 +84,7 @@ try {
       canvasHeight: canvas?.height || 0,
       canvasCssWidth: Math.round(rect?.width || 0),
       canvasCssHeight: Math.round(rect?.height || 0),
+      cocos,
       bodyText: (document.body?.innerText || "").trim().slice(0, 500),
     };
   });
@@ -100,6 +111,8 @@ try {
     throw new Error("Cocos canvas was not initialized");
   }
   if (!state.systemJsLoaded) throw new Error("SystemJS did not initialize");
+  if (!state.cocos.imported) throw new Error(`Cocos engine import failed: ${state.cocos.error}`);
+  if (!state.cocos.sceneName) throw new Error("Original Cocos launch scene did not become active");
   if (missing.length) throw new Error(`Missing required Cocos runtime responses: ${missing.join(", ")}`);
   if (badStaticResponses.length) throw new Error(`Static client assets returned HTTP errors: ${JSON.stringify(badStaticResponses)}`);
   if (failedRequests.length) throw new Error(`Unexpected static resource failures: ${JSON.stringify(failedRequests)}`);
