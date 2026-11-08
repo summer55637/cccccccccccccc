@@ -229,7 +229,7 @@ def collect_release_files(
         for candidate in sorted(original_root.rglob("*")):
             if not candidate.is_file():
                 continue
-            relative = safe_relative(candidate.relative_to(root / "offline").as_posix())
+            relative = safe_relative(candidate.relative_to(root).as_posix())
             selected[safe_relative(f"site/{relative}")] = candidate
 
     # Cocos loads this file before its first scene. Keep every original relative
