@@ -32,7 +32,7 @@ jobs:
           ref: offline/local-character-system
           lfs: false
 
-      - name: Assemble Pages site from original Cocos runtime only
+      - name: Assemble original Cocos client at Pages root
         env:
           SITE_DIR: ${{ runner.temp }}/pages-site
         run: |
@@ -44,7 +44,6 @@ jobs:
           repo = Path.cwd()
           client = repo / "client"
           site = Path(os.environ["SITE_DIR"])
-          target = site / "client"
           if not (client / "index.html").is_file():
               raise SystemExit("Missing original Cocos client/index.html")
           if not (client / "src/settings.57846.json").is_file():
@@ -65,34 +64,42 @@ jobs:
                   })
               if here == (client / "assets" / "main").resolve():
                   ignored.add("index.deobf.js")
+              if here == (client / "src" / "assets" / "scripts" / "net").resolve():
+                  ignored.add("goline-adapter.deobf.js")
               return ignored
 
-          shutil.copytree(client, target, ignore=ignore)
+          # The original client requests /assets-packs/* and /api/* from the
+          # origin root, so its files must be hosted at the Pages root as well.
+          shutil.copytree(client, site, dirs_exist_ok=True, ignore=ignore)
           (site / ".nojekyll").write_text("", encoding="utf-8")
-          (site / "index.html").write_text(
+
+          # Keep old direct URLs working without duplicating the 244 MB pack files.
+          compat = site / "client"
+          compat.mkdir(exist_ok=True)
+          (compat / "index.html").write_text(
               '<!doctype html><html lang="zh-Hant"><meta charset="utf-8">'
-              '<meta name="viewport" content="width=device-width,initial-scale=1">'
-              '<meta http-equiv="refresh" content="0;url=./client/index.html">'
-              '<title>小樹</title><body><a href="./client/index.html">進入小樹</a></body></html>',
+              '<meta http-equiv="refresh" content="0;url=../index.html">'
+              '<title>小樹</title><a href="../index.html">進入小樹</a></html>',
               encoding="utf-8",
           )
-          # Preserve the older direct game URL while routing it to the real client.
           game = site / "game"
-          game.mkdir()
+          game.mkdir(exist_ok=True)
           (game / "index.html").write_text(
               '<!doctype html><html lang="zh-Hant"><meta charset="utf-8">'
-              '<meta http-equiv="refresh" content="0;url=../client/index.html">'
-              '<title>小樹</title><a href="../client/index.html">進入小樹</a></html>',
+              '<meta http-equiv="refresh" content="0;url=../index.html">'
+              '<title>小樹</title><a href="../index.html">進入小樹</a></html>',
               encoding="utf-8",
           )
+
           required = [
-              target / "index.html",
-              target / "src/settings.57846.json",
-              target / "cocos-js/cc.03aac.js",
-              target / "assets/internal/config.9e58a.json",
-              target / "assets/resources/config.caeb6.json",
-              target / "assets/main/config.3e757.json",
-              target / "assets/scripts/net/goline-adapter.8231b.js",
+              site / "index.html",
+              site / "src/settings.57846.json",
+              site / "cocos-js/cc.03aac.js",
+              site / "assets/internal/config.9e58a.json",
+              site / "assets/resources/config.caeb6.json",
+              site / "assets/main/config.3e757.json",
+              site / "src/assets/scripts/net/goline-adapter.8231b.js",
+              site / "assets-packs/packs-manifest.json",
           ]
           missing = [str(p.relative_to(site)) for p in required if not p.is_file()]
           if missing:
@@ -101,7 +108,7 @@ jobs:
           if total > 1_000_000_000:
               raise SystemExit(f"Pages site exceeds 1 GB: {total} bytes")
           count = sum(1 for p in site.rglob("*") if p.is_file())
-          print(f"Prepared original Cocos runtime: {count} files, {total / 1048576:.1f} MiB")
+          print(f"Prepared root-hosted original Cocos runtime: {count} files, {total / 1048576:.1f} MiB")
           PY
 
       - name: Set up Node for browser smoke test
@@ -114,7 +121,7 @@ jobs:
           npm install --no-save --no-package-lock playwright
           npx playwright install --with-deps chromium
 
-      - name: Verify original Cocos launch scene in Chromium
+      - name: Verify original Cocos launch scene and map pack paths in Chromium
         env:
           SITE_DIR: ${{ runner.temp }}/pages-site
           SCREENSHOT_PATH: ${{ runner.temp }}/original-client-smoke.png
