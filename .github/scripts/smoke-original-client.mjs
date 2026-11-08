@@ -7,6 +7,7 @@ import { chromium } from "playwright";
 
 const siteDir = process.env.SITE_DIR;
 const screenshotPath = process.env.SCREENSHOT_PATH || "original-client-smoke.png";
+const afterEnterScreenshotPath = process.env.SCREENSHOT_AFTER_ENTER_PATH || "original-client-after-enter.png";
 if (!siteDir) throw new Error("SITE_DIR is required");
 
 const port = 8765;
@@ -67,6 +68,24 @@ try {
   await delay(20000);
   await page.screenshot({ path: screenshotPath, fullPage: true });
 
+  // Test the original title-screen button, then capture the next original UI state.
+  await page.mouse.click(640, 636);
+  await delay(5000);
+  const afterEnter = await page.evaluate(async () => {
+    let sceneName = null;
+    try {
+      const engine = await window.System.import("cc");
+      sceneName = engine.director?.getScene?.()?.name || null;
+    } catch {}
+    return {
+      sceneName,
+      bodyText: (document.body?.innerText || "").trim().slice(0, 700),
+      canvasWidth: document.querySelector("#GameCanvas")?.width || 0,
+      canvasHeight: document.querySelector("#GameCanvas")?.height || 0,
+    };
+  });
+  await page.screenshot({ path: afterEnterScreenshotPath, fullPage: true });
+
   const state = await page.evaluate(async () => {
     const canvas = document.querySelector("#GameCanvas");
     const rect = canvas?.getBoundingClientRect();
@@ -120,7 +139,7 @@ try {
   );
   const packResponses = responses.filter(item => item.path.startsWith(`${repoPrefix}/assets-packs/`));
   const badPackResponses = packResponses.filter(item => item.status >= 400);
-  console.log(JSON.stringify({ state, requiredResponses: responses.filter(item => required.includes(item.path)), packResponses: packResponses.slice(0, 30), missing, badStaticResponses, badPackResponses, pageErrors, failedRequests, screenshotPath }, null, 2));
+  console.log(JSON.stringify({ state, afterEnter, requiredResponses: responses.filter(item => required.includes(item.path)), packResponses: packResponses.slice(0, 30), missing, badStaticResponses, badPackResponses, pageErrors, failedRequests, screenshotPath }, null, 2));
 
   if (!state.cocosCanvas || state.canvasWidth < 100 || state.canvasHeight < 100) {
     throw new Error("Cocos canvas was not initialized");
