@@ -181,6 +181,111 @@ class OriginalCocosReleaseTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("tiles.pack", result.stdout + result.stderr)
 
+    def test_download_pack_uses_exact_verified_http_ranges(self) -> None:
+        import importlib.util
+        from unittest.mock import patch
+
+        spec = importlib.util.spec_from_file_location("original_release_builder", BUILDER)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        payload = bytes((index % 251 for index in range(300_000)))
+        chunks = [payload[: 256 * 1024], payload[256 * 1024 :]]
+
+        class FakeResponse:
+            def __init__(self, body: bytes, start: int, end: int, total: int):
+                self.body = body
+                self.status = 206
+                self.headers = {
+                    "Content-Range": f"bytes {start}-{end}/{total}",
+                    "Content-Length": str(len(body)),
+                    "Content-Encoding": "identity",
+                }
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def geturl(self):
+                return "https://test.xiaoshu.gg/assets-packs/sample.pack"
+
+            def read(self, _size: int = -1):
+                body, self.body = self.body, b""
+                return body
+
+        responses = [
+            FakeResponse(chunks[0], 0, len(chunks[0]) - 1, len(payload)),
+            FakeResponse(chunks[1], len(chunks[0]), len(payload) - 1, len(payload)),
+        ]
+        requests = []
+
+        def fake_urlopen(request, timeout=60):
+            requests.append(request)
+            return responses.pop(0)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "sample.pack"
+            with patch.object(module.urllib.request, "urlopen", side_effect=fake_urlopen):
+                actual = module.download_pack(
+                    "sample.pack",
+                    len(payload),
+                    "https://test.xiaoshu.gg",
+                    destination,
+                )
+
+            self.assertEqual(actual, len(payload))
+            self.assertEqual(destination.read_bytes(), payload)
+            self.assertEqual(len(requests), 2)
+            self.assertEqual(requests[0].get_header("Range"), "bytes=0-262143")
+            self.assertEqual(
+                requests[1].get_header("Range"),
+                f"bytes=262144-{len(payload) - 1}",
+            )
+            self.assertEqual(requests[0].get_header("Accept-encoding"), "identity")
+
+    def test_download_pack_rejects_wrong_content_range(self) -> None:
+        import importlib.util
+        from unittest.mock import patch
+
+        spec = importlib.util.spec_from_file_location("original_release_builder_bad_range", BUILDER)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        class FakeResponse:
+            status = 206
+            headers = {
+                "Content-Range": "bytes 1-4/5",
+                "Content-Length": "4",
+                "Content-Encoding": "identity",
+            }
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def geturl(self):
+                return "https://test.xiaoshu.gg/assets-packs/sample.pack"
+
+            def read(self, _size: int = -1):
+                return b"1234"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "sample.pack"
+            with patch.object(module.urllib.request, "urlopen", return_value=FakeResponse()):
+                with self.assertRaises(module.ReleaseBuildError):
+                    module.download_pack(
+                        "sample.pack",
+                        5,
+                        "https://test.xiaoshu.gg",
+                        destination,
+                    )
+
     def test_release_refuses_symlinks_inside_the_original_client_tree(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
