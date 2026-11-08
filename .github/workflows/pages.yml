@@ -84,7 +84,8 @@ jobs:
                 if (url.origin === location.origin &&
                     url.pathname.startsWith("/") &&
                     !url.pathname.startsWith(basePath)) {
-                  url.pathname = basePath.replace(/\\/$/, "") + url.pathname;
+                  const prefix = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
+                  url.pathname = prefix + url.pathname;
                 }
                 return value instanceof Request ? new Request(url.href, value) : url.href;
               } catch (_) { return value; }
@@ -124,7 +125,7 @@ jobs:
           if head < 0:
               raise SystemExit("Original index.html has no <head> element")
           insert = head + len("<head>")
-          html = html[:insert] + '\\n<script src="./pages-base-path.js"></script>\\n' + html[insert:]
+          html = html[:insert] + '\n<script src="./pages-base-path.js"></script>\n' + html[insert:]
           root_index.write_text(html, encoding="utf-8")
 
           # Keep old direct URLs working without duplicating the 244 MB pack files.
