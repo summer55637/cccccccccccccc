@@ -76,10 +76,40 @@ try {
   await delay(20000);
   await page.screenshot({ path: screenshotPath, fullPage: true });
 
+  const state = await page.evaluate(async () => {
+    const canvas = document.querySelector("#GameCanvas");
+    const rect = canvas?.getBoundingClientRect();
+    let cocos = { imported: false, sceneName: null, version: null, error: null };
+    try {
+      const engine = await window.System.import("cc");
+      cocos = {
+        imported: true,
+        sceneName: engine.director?.getScene?.()?.name || null,
+        version: engine.ENGINE_VERSION || engine.VERSION || null,
+        error: null,
+      };
+    } catch (error) {
+      cocos.error = String(error).slice(0, 500);
+    }
+    return {
+      title: document.title,
+      systemJsLoaded: typeof window.System !== "undefined",
+      cocosCanvas: !!canvas,
+      canvasWidth: canvas?.width || 0,
+      canvasHeight: canvas?.height || 0,
+      canvasCssWidth: Math.round(rect?.width || 0),
+      canvasCssHeight: Math.round(rect?.height || 0),
+      cocos,
+      bodyText: (document.body?.innerText || "").trim().slice(0, 700),
+    };
+  });
+
   // Test the original title-screen button, then capture the next original UI state.
   await page.mouse.click(640, 636);
   await delay(5000);
   const afterEnter = await page.evaluate(async () => {
+    const canvas = document.querySelector("#GameCanvas");
+    const rect = canvas?.getBoundingClientRect();
     let sceneName = null;
     let uiNodes = [];
     try {
