@@ -101,7 +101,7 @@ try {
     "/client/assets/internal/config.9e58a.json",
     "/client/assets/resources/config.caeb6.json",
     "/client/assets/main/config.3e757.json",
-    "/client/assets/scripts/net/goline-adapter.8231b.js",
+    "/client/src/assets/scripts/net/goline-adapter.8231b.js",
   ];
   const missing = required.filter(path => !responses.some(item => item.path === path && item.status === 200));
   const badStaticResponses = responses.filter(item => item.status >= 400);
