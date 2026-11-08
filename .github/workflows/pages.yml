@@ -68,10 +68,64 @@ jobs:
                   ignored.add("goline-adapter.deobf.js")
               return ignored
 
-          # The original client requests /assets-packs/* and /api/* from the
-          # origin root, so its files must be hosted at the Pages root as well.
+          # Project Pages is served below /<repository>/, whereas the original
+          # client requests some files from /. Add a tiny URL-prefix shim before
+          # any Cocos scripts so those same-origin requests stay inside the repo.
           shutil.copytree(client, site, dirs_exist_ok=True, ignore=ignore)
           (site / ".nojekyll").write_text("", encoding="utf-8")
+          shim = r"""
+          (() => {
+            const basePath = new URL(".", location.href).pathname;
+            if (basePath === "/") return;
+            const rewrite = value => {
+              try {
+                const raw = value instanceof Request ? value.url : String(value);
+                const url = new URL(raw, location.href);
+                if (url.origin === location.origin &&
+                    url.pathname.startsWith("/") &&
+                    !url.pathname.startsWith(basePath)) {
+                  url.pathname = basePath.replace(/\\/$/, "") + url.pathname;
+                }
+                return value instanceof Request ? new Request(url.href, value) : url.href;
+              } catch (_) { return value; }
+            };
+
+            const nativeFetch = window.fetch.bind(window);
+            window.fetch = (input, init) => nativeFetch(rewrite(input), init);
+
+            const nativeOpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function(method, url, ...args) {
+              return nativeOpen.call(this, method, rewrite(url), ...args);
+            };
+
+            const NativeWebSocket = window.WebSocket;
+            window.WebSocket = class PathAwareWebSocket extends NativeWebSocket {
+              constructor(url, protocols) { super(rewrite(url), protocols); }
+            };
+
+            for (const Type of [window.HTMLImageElement, window.HTMLMediaElement, window.HTMLSourceElement, window.HTMLLinkElement]) {
+              if (!Type) continue;
+              const descriptor = Object.getOwnPropertyDescriptor(Type.prototype, "src") ||
+                                 Object.getOwnPropertyDescriptor(Type.prototype, "href");
+              const property = descriptor?.set ? "src" : "href";
+              if (descriptor?.set && descriptor.configurable) {
+                Object.defineProperty(Type.prototype, property, {
+                  ...descriptor,
+                  set(value) { descriptor.set.call(this, rewrite(value)); }
+                });
+              }
+            }
+          })();
+          """
+          (site / "pages-base-path.js").write_text(shim, encoding="utf-8")
+          root_index = site / "index.html"
+          html = root_index.read_text(encoding="utf-8")
+          head = html.lower().find("<head>")
+          if head < 0:
+              raise SystemExit("Original index.html has no <head> element")
+          insert = head + len("<head>")
+          html = html[:insert] + '\\n<script src="./pages-base-path.js"></script>\\n' + html[insert:]
+          root_index.write_text(html, encoding="utf-8")
 
           # Keep old direct URLs working without duplicating the 244 MB pack files.
           compat = site / "client"
