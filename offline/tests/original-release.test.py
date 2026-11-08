@@ -248,6 +248,82 @@ class OriginalCocosReleaseTests(unittest.TestCase):
             )
             self.assertEqual(requests[0].get_header("Accept-encoding"), "identity")
 
+    def test_download_pack_resumes_after_a_truncated_206_response(self) -> None:
+        import importlib.util
+        from unittest.mock import patch
+
+        spec = importlib.util.spec_from_file_location("original_release_builder_resume", BUILDER)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        payload = bytes((index % 239 for index in range(300_000)))
+
+        class FakeResponse:
+            status = 206
+
+            def __init__(self, body: bytes, start: int, end: int, total: int):
+                self.body = body
+                self.headers = {
+                    "Content-Range": f"bytes {start}-{end}/{total}",
+                    # Simulate a CDN that advertises the requested range but
+                    # closes the connection before sending the whole body.
+                    "Content-Length": str(end - start + 1),
+                    "Content-Encoding": "identity",
+                }
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def geturl(self):
+                return "https://test.xiaoshu.gg/assets-packs/sample.pack"
+
+            def read(self, _size: int = -1):
+                if not self.body:
+                    return b""
+                limit = min(48_000, _size if _size >= 0 else 48_000)
+                body, self.body = self.body[:limit], self.body[limit:]
+                return body
+
+        first_end = 262143
+        first_body = payload[:180_000]
+        remaining_body = payload[180_000:first_end + 1]
+        final_body = payload[first_end + 1:]
+        responses = [
+            FakeResponse(first_body, 0, first_end, len(payload)),
+            FakeResponse(remaining_body, len(first_body), first_end, len(payload)),
+            FakeResponse(final_body, first_end + 1, len(payload) - 1, len(payload)),
+        ]
+        requests = []
+
+        def fake_urlopen(request, timeout=60):
+            requests.append(request)
+            return responses.pop(0)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "sample.pack"
+            with patch.object(module.urllib.request, "urlopen", side_effect=fake_urlopen):
+                actual = module.download_pack(
+                    "sample.pack",
+                    len(payload),
+                    "https://test.xiaoshu.gg",
+                    destination,
+                )
+
+            self.assertEqual(actual, len(payload))
+            self.assertEqual(destination.read_bytes(), payload)
+            self.assertEqual(
+                [request.get_header("Range") for request in requests],
+                [
+                    "bytes=0-262143",
+                    "bytes=180000-262143",
+                    f"bytes=262144-{len(payload) - 1}",
+                ],
+            )
+
     def test_download_pack_rejects_wrong_content_range(self) -> None:
         import importlib.util
         from unittest.mock import patch

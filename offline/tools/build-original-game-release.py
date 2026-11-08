@@ -171,10 +171,10 @@ def download_pack(
                                 f"requested {start}-{end}/{expected_size}, "
                                 f"received {content_range or '<missing>'}"
                             )
-                        if content_length and int(content_length) != expected_chunk:
+                        if content_length and int(content_length) > expected_chunk:
                             raise ReleaseBuildError(
-                                f"Asset pack Content-Length mismatch for {file_name}: "
-                                f"expected {expected_chunk}, got {content_length}"
+                                f"Asset pack Content-Length exceeds requested range for {file_name}: "
+                                f"requested {expected_chunk}, got {content_length}"
                             )
                         received = 0
                         while received < expected_chunk:
@@ -183,15 +183,18 @@ def download_pack(
                                 break
                             output.write(block)
                             received += len(block)
-                        if received != expected_chunk:
+                        if received <= 0:
                             raise ReleaseBuildError(
-                                f"Asset pack body was truncated for {file_name}: "
-                                f"expected {expected_chunk} bytes, read {received}"
+                                f"Asset pack range made no progress for {file_name}: "
+                                f"requested {start}-{end}, read {received}"
                             )
-                        if response.read(1):
+                        if received == expected_chunk and response.read(1):
                             raise ReleaseBuildError(
                                 f"Asset pack body exceeded its Content-Range for {file_name}"
                             )
+                        # Some CDN edges terminate a valid 206 response early.
+                        # Advance by the bytes actually received and request the
+                        # remaining range instead of publishing a partial pack.
                         actual += received
                     elif status == 200 and start == 0:
                         received = 0
