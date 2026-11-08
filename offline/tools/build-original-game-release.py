@@ -125,45 +125,77 @@ def download_pack(
         )
     safe_name = validate_pack_name(file_name)
     url = f"{pack_origin.rstrip('/')}/assets-packs/{urllib.parse.quote(safe_name)}"
-    request = urllib.request.Request(
-        url,
-        headers={"User-Agent": "Original-Cocos-Offline-Release/1.0"},
-        method="GET",
-    )
     destination.parent.mkdir(parents=True, exist_ok=True)
     actual = 0
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            final = urllib.parse.urlparse(response.geturl())
-            if final.scheme != "https" or final.hostname not in PACK_HOST_ALLOWLIST:
-                raise ReleaseBuildError(
-                    f"Asset pack request redirected outside allowlist: {file_name}"
-                )
-            status = getattr(response, "status", 200)
-            if status != 200:
-                raise ReleaseBuildError(
-                    f"Asset pack download returned HTTP {status}: {file_name}"
-                )
-            with destination.open("wb") as output:
-                while True:
-                    block = response.read(1024 * 1024)
-                    if not block:
-                        break
-                    actual += len(block)
-                    if expected_size > 0 and actual > expected_size:
+    range_bytes = 256 * 1024
+    with destination.open("wb") as output:
+        while actual < expected_size:
+            start = actual
+            end = min(expected_size - 1, start + range_bytes - 1)
+            request = urllib.request.Request(
+                url,
+                headers={
+                    "User-Agent": "Original-Cocos-Offline-Release/1.0",
+                    "Accept-Encoding": "identity",
+                    "Range": f"bytes={start}-{end}",
+                },
+                method="GET",
+            )
+            try:
+                with urllib.request.urlopen(request, timeout=60) as response:
+                    final = urllib.parse.urlparse(response.geturl())
+                    if final.scheme != "https" or final.hostname not in PACK_HOST_ALLOWLIST:
                         raise ReleaseBuildError(
-                            f"Asset pack is larger than manifest size: {file_name}"
+                            f"Asset pack request redirected outside allowlist: {file_name}"
                         )
-                    output.write(block)
-    except urllib.error.HTTPError as error:
-        raise ReleaseBuildError(
-            f"Asset pack download failed with HTTP {error.code}: {file_name}"
-        ) from error
-    except urllib.error.URLError as error:
-        raise ReleaseBuildError(
-            f"Asset pack download failed: {file_name}: {error.reason}"
-        ) from error
-    if expected_size > 0 and actual != expected_size:
+                    status = getattr(response, "status", 200)
+                    content_range = response.headers.get("Content-Range", "")
+                    content_encoding = response.headers.get("Content-Encoding", "identity")
+                    content_length = response.headers.get("Content-Length", "")
+                    payload = response.read(range_bytes + 1)
+                    if status == 206:
+                        match = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+)", content_range.strip())
+                        if not match:
+                            raise ReleaseBuildError(
+                                f"Asset pack returned an invalid Content-Range for {file_name}: "
+                                f"{content_range or '<missing>'}"
+                            )
+                        range_start, range_end, total = map(int, match.groups())
+                        expected_chunk = end - start + 1
+                        if (
+                            range_start != start
+                            or range_end != end
+                            or total != expected_size
+                            or len(payload) != expected_chunk
+                        ):
+                            raise ReleaseBuildError(
+                                f"Asset pack range mismatch for {file_name}: "
+                                f"requested {start}-{end}/{expected_size}, "
+                                f"received {content_range or '<missing>'} "
+                                f"with {len(payload)} bytes"
+                            )
+                        output.write(payload)
+                        actual += len(payload)
+                    elif status == 200 and start == 0 and len(payload) == expected_size:
+                        output.write(payload)
+                        actual = len(payload)
+                    else:
+                        raise ReleaseBuildError(
+                            f"Asset pack download did not return a complete range for {file_name}: "
+                            f"HTTP {status}, Content-Length={content_length or '<missing>'}, "
+                            f"Content-Encoding={content_encoding}, "
+                            f"Content-Range={content_range or '<missing>'}, "
+                            f"received={len(payload)} bytes at offset {start}"
+                        )
+            except urllib.error.HTTPError as error:
+                raise ReleaseBuildError(
+                    f"Asset pack download failed with HTTP {error.code} at byte {start}: {file_name}"
+                ) from error
+            except urllib.error.URLError as error:
+                raise ReleaseBuildError(
+                    f"Asset pack download failed at byte {start}: {file_name}: {error.reason}"
+                ) from error
+    if actual != expected_size:
         raise ReleaseBuildError(
             f"Asset pack size mismatch for {file_name}: expected {expected_size}, got {actual}"
         )
