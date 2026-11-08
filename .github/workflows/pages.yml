@@ -75,6 +75,7 @@ jobs:
           print(f"Prepared {sum(1 for p in site.rglob('*') if p.is_file())} release files")
           PY
 
+# GitHub Pages must already be configured to use GitHub Actions.
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
