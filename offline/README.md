@@ -50,3 +50,7 @@ python offline/tools/build-release.py --output dist/offline-adventure-release.zi
 ```
 
 打包器只收錄角色管理、遊戲、IndexedDB／備份模組、Service Worker、PWA manifest 與安裝圖示；不會把根目錄的 `server.js`、帳號資料、原始 Cocos 資源、測試檔或文件放進 ZIP。打包前會核對 Service Worker 預快取清單、PWA 圖示、外部網址及常見硬編碼憑證樣式，並在 ZIP 內寫入逐檔 SHA-256 清單。這個工具只產生離線版封裝，不會替倉庫公開部署，也不代表已完成素材授權或 Git 歷史清理。
+
+## 下載 CI 驗證過的離線版 ZIP
+
+每次單機版完整 CI 全部成功後，GitHub Actions 會把 `offline-adventure-release-<commit>` ZIP 作為私有工作流程產物保存 7 天。進入該次 Actions 執行頁，在頁面底部 Artifacts 區域下載。若 CI 任一測試失敗，就不會上傳 ZIP。這是私有 CI 產物，不會公開部署網站。

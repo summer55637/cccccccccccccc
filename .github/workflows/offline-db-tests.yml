@@ -63,3 +63,12 @@ jobs:
 
       - name: Run Firefox and WebKit compatibility smoke tests
         run: node offline/tests/run-cross-browser-smoke.mjs
+
+      - name: Upload verified offline release archive
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-adventure-release-${{ github.sha }}
+          path: ${{ runner.temp }}/offline-adventure-release.zip
+          if-no-files-found: error
+          retention-days: 7
