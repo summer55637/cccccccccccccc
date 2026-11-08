@@ -81,7 +81,10 @@ jobs:
               try {
                 const raw = value instanceof Request ? value.url : String(value);
                 const url = new URL(raw, location.href);
-                if (url.origin === location.origin &&
+                const sameHost = url.hostname === location.hostname && url.port === location.port;
+                const sameOrigin = url.origin === location.origin ||
+                  ((url.protocol === "ws:" || url.protocol === "wss:") && sameHost);
+                if (sameOrigin &&
                     url.pathname.startsWith("/") &&
                     !url.pathname.startsWith(basePath)) {
                   const prefix = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
