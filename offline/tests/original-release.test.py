@@ -196,6 +196,7 @@ class OriginalCocosReleaseTests(unittest.TestCase):
         class FakeResponse:
             def __init__(self, body: bytes, start: int, end: int, total: int):
                 self.body = body
+                self.read_limit = 17000
                 self.status = 206
                 self.headers = {
                     "Content-Range": f"bytes {start}-{end}/{total}",
@@ -213,7 +214,8 @@ class OriginalCocosReleaseTests(unittest.TestCase):
                 return "https://test.xiaoshu.gg/assets-packs/sample.pack"
 
             def read(self, _size: int = -1):
-                body, self.body = self.body, b""
+                limit = self.read_limit if _size < 0 else min(self.read_limit, _size)
+                body, self.body = self.body[:limit], self.body[limit:]
                 return body
 
         responses = [

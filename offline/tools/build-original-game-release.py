@@ -152,7 +152,6 @@ def download_pack(
                     content_range = response.headers.get("Content-Range", "")
                     content_encoding = response.headers.get("Content-Encoding", "identity")
                     content_length = response.headers.get("Content-Length", "")
-                    payload = response.read(range_bytes + 1)
                     if status == 206:
                         match = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+)", content_range.strip())
                         if not match:
@@ -166,26 +165,59 @@ def download_pack(
                             range_start != start
                             or range_end != end
                             or total != expected_size
-                            or len(payload) != expected_chunk
                         ):
                             raise ReleaseBuildError(
                                 f"Asset pack range mismatch for {file_name}: "
                                 f"requested {start}-{end}/{expected_size}, "
-                                f"received {content_range or '<missing>'} "
-                                f"with {len(payload)} bytes"
+                                f"received {content_range or '<missing>'}"
                             )
-                        output.write(payload)
-                        actual += len(payload)
-                    elif status == 200 and start == 0 and len(payload) == expected_size:
-                        output.write(payload)
-                        actual = len(payload)
+                        if content_length and int(content_length) != expected_chunk:
+                            raise ReleaseBuildError(
+                                f"Asset pack Content-Length mismatch for {file_name}: "
+                                f"expected {expected_chunk}, got {content_length}"
+                            )
+                        received = 0
+                        while received < expected_chunk:
+                            block = response.read(min(64 * 1024, expected_chunk - received))
+                            if not block:
+                                break
+                            output.write(block)
+                            received += len(block)
+                        if received != expected_chunk:
+                            raise ReleaseBuildError(
+                                f"Asset pack body was truncated for {file_name}: "
+                                f"expected {expected_chunk} bytes, read {received}"
+                            )
+                        if response.read(1):
+                            raise ReleaseBuildError(
+                                f"Asset pack body exceeded its Content-Range for {file_name}"
+                            )
+                        actual += received
+                    elif status == 200 and start == 0:
+                        received = 0
+                        while True:
+                            block = response.read(64 * 1024)
+                            if not block:
+                                break
+                            received += len(block)
+                            if received > expected_size:
+                                raise ReleaseBuildError(
+                                    f"Asset pack response is larger than manifest size: {file_name}"
+                                )
+                            output.write(block)
+                        if received != expected_size:
+                            raise ReleaseBuildError(
+                                f"Asset pack full response was truncated for {file_name}: "
+                                f"expected {expected_size}, read {received}; "
+                                f"Content-Length={content_length or '<missing>'}"
+                            )
+                        actual = received
                     else:
                         raise ReleaseBuildError(
                             f"Asset pack download did not return a complete range for {file_name}: "
                             f"HTTP {status}, Content-Length={content_length or '<missing>'}, "
                             f"Content-Encoding={content_encoding}, "
-                            f"Content-Range={content_range or '<missing>'}, "
-                            f"received={len(payload)} bytes at offset {start}"
+                            f"Content-Range={content_range or '<missing>'} at offset {start}"
                         )
             except urllib.error.HTTPError as error:
                 raise ReleaseBuildError(
