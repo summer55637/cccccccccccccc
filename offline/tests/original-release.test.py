@@ -112,7 +112,7 @@ class OriginalCocosReleaseTests(unittest.TestCase):
                 self.assertIn("site/index.1d55c.js", names)
                 self.assertIn("site/application.23610.js", names)
                 self.assertIn("site/src/settings.57846.json", names)
-                self.assertIn("site/cocos-js/cc.js", names)
+                self.assertIn("site/cocos-js/cc.03aac.js", names)
                 self.assertIn("site/assets/main/index.3e757.js", names)
                 self.assertIn("site/assets-packs/tiles.pack", names)
                 self.assertIn("site/assets-packs/tiles.index.json", names)
