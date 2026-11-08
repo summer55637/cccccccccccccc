@@ -42,7 +42,7 @@ def make_fixture(root: Path) -> None:
                 "group": "tile",
                 "file": "tiles.pack",
                 "index": "tiles.index.json",
-                "size": 16,
+                "size": 17,
             }],
             "enc": False,
         }),
