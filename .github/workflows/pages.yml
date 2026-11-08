@@ -6,7 +6,7 @@ on:
       - offline/local-character-system
     paths:
       - ".github/workflows/pages.yml"
-      - ".github/scripts/**
+      - ".github/scripts/**"
       - "client/**"
   workflow_dispatch:
 
