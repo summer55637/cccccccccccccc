@@ -38,6 +38,8 @@ jobs:
 
       - name: Test safe offline release packaging
         run: python offline/tests/release-package.test.py
+      - name: Test original Cocos release packaging contract
+        run: python offline/tests/original-release.test.py
 
       - name: Build allowlisted offline release archive
         run: python offline/tools/build-release.py --output "$RUNNER_TEMP/offline-adventure-release.zip"
