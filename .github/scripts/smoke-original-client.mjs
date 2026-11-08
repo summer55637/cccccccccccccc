@@ -81,60 +81,40 @@ try {
   await delay(5000);
   const afterEnter = await page.evaluate(async () => {
     let sceneName = null;
-    let sceneNodes = [];
+    let uiNodes = [];
     try {
       const engine = await window.System.import("cc");
       const scene = engine.director?.getScene?.();
       sceneName = scene?.name || null;
-      const visit = (node, depth = 0) => {
-        if (!node || sceneNodes.length >= 260) return;
+      const visit = (node, parents = []) => {
+        if (!node) return;
+        const nextPath = [...parents, node.name || "(unnamed)"];
         const components = (node.components || []).map(component => {
           const type = component?.constructor?.name || "Component";
-          const transform = component?.contentSize ? {
+          const text = typeof component?.string === "string" ? component.string :
+                       typeof component?.text === "string" ? component.text : "";
+          const ui = component?.contentSize ? {
             width: Math.round(component.contentSize.width || 0),
             height: Math.round(component.contentSize.height || 0),
           } : undefined;
-          return { type, transform };
+          return { type, text: text.slice(0, 100), ui };
         });
-        sceneNodes.push({
-          name: node.name,
-          depth,
-          active: node.activeInHierarchy,
-          position: node.position ? {
-            x: Math.round(node.position.x),
-            y: Math.round(node.position.y),
-          } : null,
-          components,
-        });
-        for (const child of (node.children || [])) visit(child, depth + 1);
+        const searchable = [node.name, ...components.map(x => x.text)].join(" ");
+        if (/(login|account|pwd|password|input|enter|register|帳號|密碼|登入|進入|註冊)/i.test(searchable)) {
+          uiNodes.push({
+            path: nextPath.join("/"),
+            active: node.activeInHierarchy,
+            position: node.position ? {
+              x: Math.round(node.position.x),
+              y: Math.round(node.position.y),
+            } : null,
+            components,
+          });
+        }
+        for (const child of (node.children || [])) visit(child, nextPath);
       };
       visit(scene);
     } catch {}
-    return {
-      sceneName,
-      sceneNodes,
-      bodyText: (document.body?.innerText || "").trim().slice(0, 700),
-      canvasWidth: document.querySelector("#GameCanvas")?.width || 0,
-      canvasHeight: document.querySelector("#GameCanvas")?.height || 0,
-    };
-  });
-  await page.screenshot({ path: afterEnterScreenshotPath, fullPage: true });
-
-  const state = await page.evaluate(async () => {
-    const canvas = document.querySelector("#GameCanvas");
-    const rect = canvas?.getBoundingClientRect();
-    let cocos = { imported: false, sceneName: null, version: null, error: null };
-    try {
-      const engine = await window.System.import("cc");
-      cocos = {
-        imported: true,
-        sceneName: engine.director?.getScene?.()?.name || null,
-        version: engine.ENGINE_VERSION || engine.VERSION || null,
-        error: null,
-      };
-    } catch (error) {
-      cocos.error = String(error).slice(0, 500);
-    }
     const bodyText = (document.body?.innerText || "").trim().slice(0, 700);
     return {
       title: document.title,
@@ -147,6 +127,21 @@ try {
       cocos,
       bodyText,
       mapAssetError: bodyText.includes("地圖素材下載失敗"),
+      htmlInputs: [...document.querySelectorAll("input,textarea,select")].map(element => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          tag: element.tagName,
+          id: element.id,
+          name: element.getAttribute("name"),
+          type: element.getAttribute("type"),
+          placeholder: element.getAttribute("placeholder"),
+          valueLength: element.value?.length || 0,
+          visible: rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden",
+          rect: { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) },
+        };
+      }),
+      localStorageKeys: Object.keys(localStorage),
     };
   });
 
