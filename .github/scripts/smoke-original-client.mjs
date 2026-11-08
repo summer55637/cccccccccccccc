@@ -1,5 +1,8 @@
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
+import { mkdtemp, rm, symlink } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { chromium } from "playwright";
 
 const siteDir = process.env.SITE_DIR;
@@ -8,7 +11,10 @@ if (!siteDir) throw new Error("SITE_DIR is required");
 
 const port = 8765;
 const origin = `http://127.0.0.1:${port}`;
-const server = spawn("python3", ["-m", "http.server", String(port), "--bind", "127.0.0.1", "--directory", siteDir], {
+const repoPrefix = "/cccccccccccccc";
+const previewRoot = await mkdtemp(join(tmpdir(), "pages-preview-"));
+await symlink(siteDir, join(previewRoot, repoPrefix.slice(1)), "dir");
+const server = spawn("python3", ["-m", "http.server", String(port), "--bind", "127.0.0.1", "--directory", previewRoot], {
   stdio: "ignore",
 });
 let browser;
@@ -16,7 +22,7 @@ try {
   let ready = false;
   for (let i = 0; i < 40; i++) {
     try {
-      const response = await fetch(`${origin}/index.html`);
+      const response = await fetch(`${origin}${repoPrefix}/index.html`);
       if (response.ok) { ready = true; break; }
     } catch {}
     await delay(250);
@@ -46,7 +52,7 @@ try {
     }
   });
 
-  const response = await page.goto(`${origin}/index.html`, {
+  const response = await page.goto(`${origin}${repoPrefix}/index.html`, {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
@@ -91,7 +97,8 @@ try {
     };
   });
 
-  const required = [
+  const requiredRelative = [
+    "/pages-base-path.js",
     "/src/polyfills.bundle.5adbf.js",
     "/src/system.bundle.543e6.js",
     "/src/import-map.4e643.json",
@@ -106,11 +113,12 @@ try {
     "/src/assets/scripts/net/goline-adapter.8231b.js",
     "/assets-packs/packs-manifest.json",
   ];
+  const required = requiredRelative.map(path => repoPrefix + path);
   const missing = required.filter(path => !responses.some(item => item.path === path && item.status === 200));
   const badStaticResponses = responses.filter(item =>
-    item.status >= 400 && !item.path.startsWith("/api/") && !item.path.startsWith("/ws")
+    item.status >= 400 && !item.path.includes("/api/") && !item.path.endsWith("/ws")
   );
-  const packResponses = responses.filter(item => item.path.startsWith("/assets-packs/"));
+  const packResponses = responses.filter(item => item.path.startsWith(`${repoPrefix}/assets-packs/`));
   const badPackResponses = packResponses.filter(item => item.status >= 400);
   console.log(JSON.stringify({ state, requiredResponses: responses.filter(item => required.includes(item.path)), packResponses: packResponses.slice(0, 30), missing, badStaticResponses, badPackResponses, pageErrors, failedRequests, screenshotPath }, null, 2));
 
@@ -132,4 +140,5 @@ try {
 } finally {
   if (browser) await browser.close();
   server.kill("SIGTERM");
+  await rm(previewRoot, { recursive: true, force: true });
 }
