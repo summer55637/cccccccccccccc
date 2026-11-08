@@ -1,4 +1,4 @@
-name: Publish offline adventure to GitHub Pages
+name: Publish original Cocos client to GitHub Pages
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - offline/local-character-system
     paths:
       - ".github/workflows/pages.yml"
+      - "client/**"
   workflow_dispatch:
 
 permissions:
@@ -20,61 +21,91 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout clean offline branch
+      - name: Checkout original client
         uses: actions/checkout@v4
         with:
           ref: offline/local-character-system
+          lfs: false
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Build allowlisted offline release
-        run: python offline/tools/build-release.py --output "$RUNNER_TEMP/offline-adventure-release.zip"
-
-      - name: Prepare GitHub Pages site from verified release only
+      - name: Assemble Pages site from original Cocos runtime only
         env:
-          RELEASE_ZIP: ${{ runner.temp }}/offline-adventure-release.zip
           SITE_DIR: ${{ runner.temp }}/pages-site
         run: |
           python - <<'PY'
           import os
-          import zipfile
+          import shutil
           from pathlib import Path
 
-          archive = Path(os.environ["RELEASE_ZIP"])
+          repo = Path.cwd()
+          client = repo / "client"
           site = Path(os.environ["SITE_DIR"])
+          target = site / "client"
+          if not (client / "index.html").is_file():
+              raise SystemExit("Missing original Cocos client/index.html")
+          if not (client / "src/settings.57846.json").is_file():
+              raise SystemExit("Missing Cocos runtime settings")
+          if not (client / "assets/main/config.3e757.json").is_file():
+              raise SystemExit("Missing original main asset bundle")
           site.mkdir(parents=True, exist_ok=True)
-          with zipfile.ZipFile(archive) as bundle:
-              for entry in bundle.infolist():
-                  if entry.is_dir():
-                      continue
-                  name = entry.filename
-                  if not name.startswith("offline/"):
-                      raise SystemExit(f"Unexpected release path: {name}")
-                  relative = name[len("offline/"):]
-                  target = (site / relative).resolve()
-                  target.relative_to(site.resolve())
-                  target.parent.mkdir(parents=True, exist_ok=True)
-                  target.write_bytes(bundle.read(entry))
+
+          def ignore(directory, names):
+              here = Path(directory).resolve()
+              ignored = set()
+              if here == client.resolve():
+                  ignored.update({
+                      "decoded_strings_adapter.json",
+                      "decoded_strings_main.json",
+                      "manifest_mapping.json",
+                      "texture_packer_atlas.json",
+                  })
+              if here == (client / "src").resolve():
+                  ignored.add("assets")  # analysis-only duplicate; runtime plugin is in client/assets
+              if here == (client / "assets" / "main").resolve():
+                  ignored.add("index.deobf.js")
+              return ignored
+
+          shutil.copytree(client, target, ignore=ignore)
           (site / ".nojekyll").write_text("", encoding="utf-8")
           (site / "index.html").write_text(
               '<!doctype html><html lang="zh-Hant"><meta charset="utf-8">'
               '<meta name="viewport" content="width=device-width,initial-scale=1">'
-              '<meta http-equiv="refresh" content="0; url=./character/ui/index.html">'
-              '<title>單機冒險世界</title><p><a href="./character/ui/index.html">進入單機冒險世界</a></p></html>',
+              '<meta http-equiv="refresh" content="0;url=./client/index.html">'
+              '<title>小樹</title><body><a href="./client/index.html">進入小樹</a></body></html>',
               encoding="utf-8",
           )
-          print(f"Prepared {sum(1 for p in site.rglob('*') if p.is_file())} release files")
+          # Preserve the older direct game URL while routing it to the real client.
+          game = site / "game"
+          game.mkdir()
+          (game / "index.html").write_text(
+              '<!doctype html><html lang="zh-Hant"><meta charset="utf-8">'
+              '<meta http-equiv="refresh" content="0;url=../client/index.html">'
+              '<title>小樹</title><a href="../client/index.html">進入小樹</a></html>',
+              encoding="utf-8",
+          )
+          required = [
+              target / "index.html",
+              target / "src/settings.57846.json",
+              target / "cocos-js/cc.03aac.js",
+              target / "assets/internal/config.9e58a.json",
+              target / "assets/resources/config.caeb6.json",
+              target / "assets/main/config.3e757.json",
+              target / "assets/scripts/net/goline-adapter.8231b.js",
+          ]
+          missing = [str(p.relative_to(site)) for p in required if not p.is_file()]
+          if missing:
+              raise SystemExit("Missing runtime files: " + ", ".join(missing))
+          total = sum(p.stat().st_size for p in site.rglob("*") if p.is_file())
+          if total > 1_000_000_000:
+              raise SystemExit(f"Pages site exceeds 1 GB: {total} bytes")
+          count = sum(1 for p in site.rglob("*") if p.is_file())
+          print(f"Prepared original Cocos runtime: {count} files, {total / 1048576:.1f} MiB")
           PY
 
-# GitHub Pages must already be configured to use GitHub Actions.
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
