@@ -41,7 +41,8 @@ try {
   const apiRequests = [];
   page.on("request", request => {
     const url = request.url();
-    if (url.includes("/api/") || /\\/ws(?:\\?|$)/.test(new URL(url).pathname)) {
+    const requestPath = new URL(url).pathname;
+    if (requestPath.startsWith("/api/") || requestPath === "/ws") {
       apiRequests.push({ method: request.method(), url: url.slice(0, 300) });
     }
   });
