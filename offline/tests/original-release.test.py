@@ -66,7 +66,7 @@ def make_fixture(root: Path) -> None:
         "extracted_data/npchtml.json": '{"pages":{}}',
         "extracted_data/castles.json": "[]",
         "offline/original/local-goline-bridge.js": "/* local bridge fixture */",
-        "server.js": "must never be published",
+        "server.js": 'const MASTER_PACK_KEY = Buffer.from("' + "0123456789abcdef".repeat(4) + '", "hex");',
         "local_accounts.json": '{"password":"must-never-be-published"}',
         "node_modules/fake/index.js": "must never be published",
         "tools/goline.proto": "must never be published",
@@ -120,6 +120,10 @@ class OriginalCocosReleaseTests(unittest.TestCase):
                 self.assertIn("site/npcs.json", names)
                 self.assertIn("site/npchtml.json", names)
                 self.assertIn("site/offline/original/local-goline-bridge.js", names)
+                self.assertIn("site/offline/original/local-packkey.json", names)
+                wrapper = json.loads(archive.read("site/offline/original/local-packkey.json"))
+                self.assertEqual(wrapper["token"], "xiaoshu-offline-singleplayer-v1")
+                self.assertNotIn("0123456789abcdef", archive.read("site/offline/original/local-packkey.json").decode("utf-8"))
 
     def test_release_excludes_server_accounts_dependencies_and_backups(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

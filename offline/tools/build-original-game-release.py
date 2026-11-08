@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 import urllib.error
@@ -16,6 +17,7 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 DEFAULT_PACK_ORIGIN = "https://test.xiaoshu.gg"
+LOCAL_PACK_TOKEN = "xiaoshu-offline-singleplayer-v1"
 PACK_HOST_ALLOWLIST = {"test.xiaoshu.gg"}
 REQUIRED_CLIENT_FILES = {
     "index.html",
@@ -298,6 +300,51 @@ def collect_release_files(
                 continue
             relative = safe_relative(candidate.relative_to(root).as_posix())
             selected[safe_relative(f"site/{relative}")] = candidate
+
+    # Wrap the original AES-GCM asset key for the accountless local token.
+    # The raw key is read from server.js only during packaging and is never
+    # copied into the public site.
+    server_key_source = root / "server.js"
+    key_wrapper_tool = root / "offline" / "tools" / "create-local-packkey.mjs"
+    if not server_key_source.is_file() or not key_wrapper_tool.is_file():
+        raise ReleaseBuildError("Missing build-time source for original Cocos pack-key wrapping")
+    pack_key_path = download_root / "local-packkey.json"
+    try:
+        wrapped = subprocess.run(
+            [
+                "node",
+                str(key_wrapper_tool),
+                "--server",
+                str(server_key_source),
+                "--output",
+                str(pack_key_path),
+                "--token",
+                LOCAL_PACK_TOKEN,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise ReleaseBuildError("Could not run the local pack-key wrapper tool") from error
+    if wrapped.returncode != 0 or not pack_key_path.is_file():
+        raise ReleaseBuildError(
+            "Could not generate the local pack-key wrapper: "
+            + (wrapped.stderr.strip() or "wrapper tool failed")
+        )
+    try:
+        wrapper_data = json.loads(pack_key_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ReleaseBuildError("Generated local pack-key wrapper is invalid JSON") from error
+    if (
+        wrapper_data.get("ok") is not True
+        or wrapper_data.get("v") != 2
+        or wrapper_data.get("token") != LOCAL_PACK_TOKEN
+        or not isinstance(wrapper_data.get("wrap"), str)
+    ):
+        raise ReleaseBuildError("Generated local pack-key wrapper failed validation")
+    selected["site/offline/original/local-packkey.json"] = pack_key_path
 
     # Cocos loads this file before its first scene. Keep every original relative
     # path intact and verify every PWA icon resolves within the published site.
