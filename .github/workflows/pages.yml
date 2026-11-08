@@ -106,6 +106,31 @@ jobs:
           print(f"Prepared original Cocos runtime: {count} files, {total / 1048576:.1f} MiB")
           PY
 
+      - name: Set up Node for browser smoke test
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Chromium smoke-test browser
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+
+      - name: Verify original Cocos launch scene in Chromium
+        env:
+          SITE_DIR: ${{ runner.temp }}/pages-site
+          SCREENSHOT_PATH: ${{ runner.temp }}/original-client-smoke.png
+        run: node .github/scripts/smoke-original-client.mjs
+
+      - name: Upload original client smoke-test screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-cocos-smoke-test
+          path: ${{ runner.temp }}/original-client-smoke.png
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
