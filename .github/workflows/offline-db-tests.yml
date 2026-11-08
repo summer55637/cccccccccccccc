@@ -20,7 +20,7 @@ jobs:
   indexeddb-browser-tests:
     name: Chromium IndexedDB CRUD and persistence
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -44,6 +44,9 @@ jobs:
       - name: Build allowlisted offline release archive
         run: python offline/tools/build-release.py --output "$RUNNER_TEMP/offline-adventure-release.zip"
 
+      - name: Build complete original Cocos release from verified asset manifest
+        run: python offline/tools/build-original-game-release.py --fetch-missing-packs --output "$RUNNER_TEMP/original-cocos-offline.zip"
+
       - name: Install Playwright
         working-directory: offline
         run: npm install --no-save --no-package-lock playwright
@@ -65,6 +68,15 @@ jobs:
 
       - name: Run Firefox and WebKit compatibility smoke tests
         run: node offline/tests/run-cross-browser-smoke.mjs
+
+      - name: Upload verified original Cocos offline release archive
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-cocos-offline-release-${{ github.sha }}
+          path: ${{ runner.temp }}/original-cocos-offline.zip
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Upload verified offline release archive
         if: success()
