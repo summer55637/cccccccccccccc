@@ -38,6 +38,13 @@ try {
   const responses = [];
   const pageErrors = [];
   const failedRequests = [];
+  const apiRequests = [];
+  page.on("request", request => {
+    const url = request.url();
+    if (url.includes("/api/") || /\\/ws(?:\\?|$)/.test(new URL(url).pathname)) {
+      apiRequests.push({ method: request.method(), url: url.slice(0, 300) });
+    }
+  });
   page.on("response", response => {
     const url = response.url();
     if (url.startsWith(origin)) {
@@ -73,12 +80,38 @@ try {
   await delay(5000);
   const afterEnter = await page.evaluate(async () => {
     let sceneName = null;
+    let sceneNodes = [];
     try {
       const engine = await window.System.import("cc");
-      sceneName = engine.director?.getScene?.()?.name || null;
+      const scene = engine.director?.getScene?.();
+      sceneName = scene?.name || null;
+      const visit = (node, depth = 0) => {
+        if (!node || sceneNodes.length >= 260) return;
+        const components = (node.components || []).map(component => {
+          const type = component?.constructor?.name || "Component";
+          const transform = component?.contentSize ? {
+            width: Math.round(component.contentSize.width || 0),
+            height: Math.round(component.contentSize.height || 0),
+          } : undefined;
+          return { type, transform };
+        });
+        sceneNodes.push({
+          name: node.name,
+          depth,
+          active: node.activeInHierarchy,
+          position: node.position ? {
+            x: Math.round(node.position.x),
+            y: Math.round(node.position.y),
+          } : null,
+          components,
+        });
+        for (const child of (node.children || [])) visit(child, depth + 1);
+      };
+      visit(scene);
     } catch {}
     return {
       sceneName,
+      sceneNodes,
       bodyText: (document.body?.innerText || "").trim().slice(0, 700),
       canvasWidth: document.querySelector("#GameCanvas")?.width || 0,
       canvasHeight: document.querySelector("#GameCanvas")?.height || 0,
@@ -139,7 +172,7 @@ try {
   );
   const packResponses = responses.filter(item => item.path.startsWith(`${repoPrefix}/assets-packs/`));
   const badPackResponses = packResponses.filter(item => item.status >= 400);
-  console.log(JSON.stringify({ state, afterEnter, requiredResponses: responses.filter(item => required.includes(item.path)), packResponses: packResponses.slice(0, 30), missing, badStaticResponses, badPackResponses, pageErrors, failedRequests, screenshotPath }, null, 2));
+  console.log(JSON.stringify({ state, afterEnter, apiRequests, requiredResponses: responses.filter(item => required.includes(item.path)), packResponses: packResponses.slice(0, 30), missing, badStaticResponses, badPackResponses, pageErrors, failedRequests, screenshotPath }, null, 2));
 
   if (!state.cocosCanvas || state.canvasWidth < 100 || state.canvasHeight < 100) {
     throw new Error("Cocos canvas was not initialized");
